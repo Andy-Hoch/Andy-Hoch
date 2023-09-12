@@ -28,6 +28,6 @@ I'm Andy, a Full-Stack Developer with a background in digital marketing. I'm pas
 
 🌟 **Passion**: I'm excited about bringing a customer-first approach and fresh ideas to the world of web development.
 
-📫 **Let's Connect!**: Feel free to reach out for collaboration, coding discussions, or just to say hi. I'm always eager to learn and grow in this ever-evolving tech landscape.
+📫 **Let's Connect!**: Feel free to reach out for collaboration, coding discussions, or just to say hi. I'm always eager to learn, open for feedback and want to grow in this ever-evolving tech landscape.
 
 Happy coding! 🚀
