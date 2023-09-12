@@ -8,7 +8,7 @@ Languages I speak:
 Additional languages I write in:
 <br>
 <br>
-<img src="https://cdn.jsdelivr.net/npm/@programming-languages-logos/javascript@0.0.0/javascript_64&64.png" alt="JS Logo">
-<img src="https://cdn.jsdelivr.net/npm/@programming-languages-logos/css@0.0.1/css_64&64.png" alt="CSS Logo">
-<img src="https://cdn.jsdelivr.net/npm/@programming-languages-logos/ruby@0.0.0/ruby_64&64.png" alt="Ruby Logo">
-<img src="https://cdn.jsdelivr.net/npm/@programming-languages-logos/html@0.0.0/html_64&64.png" alt="HTML Logo">
+<img src="https://cdn.jsdelivr.net/npm/@programming-languages-logos/javascript@0.0.0/javascript_128x128.png" alt="JS Logo">
+<img src="https://cdn.jsdelivr.net/npm/@programming-languages-logos/css@0.0.0/css_128x128.png" alt="CSS Logo">
+<img src="https://cdn.jsdelivr.net/npm/@programming-languages-logos/ruby@0.0.0/ruby_128x128.png" alt="Ruby Logo">
+<img src="https://cdn.jsdelivr.net/npm/@programming-languages-logos/html@0.0.1/html_128x128.png" alt="HTML Logo">
