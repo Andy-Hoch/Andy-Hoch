@@ -10,9 +10,9 @@ I'm Andy, a Full-Stack Developer with a background in digital marketing. I'm pas
 - **[Sport Buddy](https://github.com/Andy-Hoch/Sport-Buddy)**: A web app connecting sports enthusiasts, showcasing my skills in Ruby on Rails, APIs, and real-time chat implementation with WebSocket.
 - **[citychurch News](https://citychurch.koeln/news-ios)**: A native iOS and Android app for optimizing internal communication, designed using Figma and implemented with Bravo Studio.
 
-💼 **Professional Background**: I've also worked as an Online Marketing Manager at Adcologne GmbH and as a Digital Lead at citychurch, where I've honed my skills in technical marketing and digital infrastructure management.
+💼 **Professional Background**: I've also worked as an Online Marketing Manager at [Adcologne GmbH](https://www.adcologne.de/) and as a Digital Lead at [citychurch](https://citychurch.koeln), where I've honed my skills in leadership, technical marketing and digital infrastructure management.
 
-🛠️ **Skills**:
+🛠️ **Technical Skills**:
 - HTML
 - CSS
 - JavaScript
