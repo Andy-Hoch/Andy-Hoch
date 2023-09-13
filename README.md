@@ -23,7 +23,7 @@ I'm Andy, a Full-Stack Developer with a background in digital marketing. I'm pas
 - GitHub
 
 📚 **Education**:
-- Web Development Bootcamp, Le Wagon (07/2022 - 09/2022)
+- Web Development Bootcamp, Le Wagon (07/2023 - 09/2023)
 - Bachelor of Media Management, Rheinische Fachhochschule Köln (2014 - 2017)
 
 🌟 **Passion**: I'm excited about bringing a customer-first approach and fresh ideas to the world of web development.
