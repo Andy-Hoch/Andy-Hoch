@@ -13,12 +13,14 @@ I'm Andy, a Full-Stack Developer with a background in digital marketing. I'm pas
 💼 **Professional Background**: I've also worked as an Online Marketing Manager at [Adcologne GmbH](https://www.adcologne.de/) and as a Digital Lead at [citychurch](https://citychurch.koeln), where I've honed my skills in leadership, technical marketing and digital infrastructure management.
 
 🛠️ **Technical Skills**:
-- HTML
-- CSS
-- JavaScript
-- Ruby
-- Ruby on Rails
+- <img src="https://lyqwid.com/wp-content/uploads/2015/04/Javascript-Logo.png" alt="Javascript" width="30" height="30"/> Javascript
+- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original-wordmark.svg" alt="HTML" width="30" height="30"/> HTML
+- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original-wordmark.svg" alt="CSS" width="30" height="30"/> CSS
+- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/bootstrap/bootstrap-plain-wordmark.svg" alt="Bootstrap" width="30" height="30"/> Bootstrap
+- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/ruby/ruby-original.svg" alt="Ruby" width="30" height="30"/> Ruby
+- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/rails/rails-original-wordmark.svg" alt="Ruby on Rails" width="30" height="30"/> Ruby on Rails
 - SQL
+- <img src="https://www.vectorlogo.zone/logos/figma/figma-icon.svg" alt="figma" width="30" height="30"/> Figma
 - Git
 - GitHub
 
