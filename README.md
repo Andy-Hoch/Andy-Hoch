@@ -4,7 +4,7 @@
 
 I'm Andy, a Full-Stack Developer with a background in digital marketing. I'm passionate about creating innovative web solutions and collaborating with like-minded professionals. Here's a bit about me:
 
-🌐 **Web Development Enthusiast**: I've recently graduated from the intensive Web Development bootcamp at Le Wagon, where I gained hands-on experience in HTML, CSS, JavaScript, Ruby, Ruby on Rails, and SQL.
+🌐 **Web Development Enthusiast**: I've recently graduated from the intensive Web Development bootcamp at Le Wagon, where I gained even more hands-on experience in HTML, CSS, JavaScript, Ruby, Ruby on Rails, and SQL.
 
 🚀 **Project Highlights**:
 - **Sport Buddy**: A web app connecting sports enthusiasts, showcasing my skills in Ruby on Rails, APIs, and real-time chat implementation with WebSocket. Checkout the Repo: [Andy-Hoch/Sport-Buddy](https://github.com/Andy-Hoch/Sport-Buddy)
