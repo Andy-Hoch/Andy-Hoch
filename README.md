@@ -1,5 +1,5 @@
 # Andreas Hoch
-**Looking forward to bringing a Customer-first approach and innovative ideas to a dynamic team.**
+**Looking forward to bringing a customer-first approach and innovative ideas to a dynamic team.**
 
 
 I'm Andy, a Full-Stack Developer with a background in digital marketing. I'm passionate about creating innovative web solutions and collaborating with like-minded professionals. Here's a bit about me:
