@@ -4,6 +4,8 @@
 
 I'm Andy, a Full-Stack Developer with a background in digital marketing. I'm passionate about creating innovative web solutions and collaborating with like-minded professionals. Here's a bit about me:
 
+🌟 **Passion**: I'm excited about bringing a customer-first approach and fresh ideas to the world of web development.
+
 🌐 **Web Development Enthusiast**: I've recently graduated from the intensive Web Development bootcamp at Le Wagon, where I gained even more hands-on experience in HTML, CSS, JavaScript, Ruby, Ruby on Rails, and SQL.
 
 🚀 **Project Highlights**:
@@ -12,24 +14,19 @@ I'm Andy, a Full-Stack Developer with a background in digital marketing. I'm pas
 
 💼 **Professional Background**: I've also worked as an Online Marketing Manager at [Adcologne GmbH](https://www.adcologne.de/) and as a Digital Lead at [citychurch](https://citychurch.koeln), where I've honed my skills in leadership, technical marketing and digital infrastructure management.
 
-🛠️ **Technical Skills**:
-- <img src="https://lyqwid.com/wp-content/uploads/2015/04/Javascript-Logo.png" alt="Javascript" width="30" height="30"/> Javascript
-- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original-wordmark.svg" alt="HTML" width="30" height="30"/> HTML
-- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original-wordmark.svg" alt="CSS" width="30" height="30"/> CSS
-- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/bootstrap/bootstrap-plain-wordmark.svg" alt="Bootstrap" width="30" height="30"/> Bootstrap
-- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/ruby/ruby-original.svg" alt="Ruby" width="30" height="30"/> Ruby
-- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/rails/rails-original-wordmark.svg" alt="Ruby on Rails" width="30" height="30"/> Ruby on Rails
-- SQL
-- <img src="https://www.vectorlogo.zone/logos/figma/figma-icon.svg" alt="figma" width="30" height="30"/> Figma
-- Git
-- GitHub
+🛠️ **Technical Skills**: <br>
+<img src="https://lyqwid.com/wp-content/uploads/2015/04/Javascript-Logo.png" alt="Javascript" width="30" height="30"/> 
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original-wordmark.svg" alt="HTML" width="30" height="30"/> 
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original-wordmark.svg" alt="CSS" width="30" height="30"/> 
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/bootstrap/bootstrap-plain-wordmark.svg" alt="Bootstrap" width="30" height="30"/> 
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/ruby/ruby-original.svg" alt="Ruby" width="30" height="30"/> 
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/rails/rails-original-wordmark.svg" alt="Ruby on Rails" width="30" height="30"/> 
+SQL
+<img src="https://www.vectorlogo.zone/logos/figma/figma-icon.svg" alt="figma" width="30" height="30"/> 
 
 📚 **Education**:
-- Web Development Bootcamp, Le Wagon (07/2023 - 09/2023)
-- Bachelor of Media Management, Rheinische Fachhochschule Köln (2014 - 2017)
+Web Development Bootcamp, Le Wagon (07/2023 - 09/2023) | Bachelor of Media Management, Rheinische Fachhochschule Köln (2014 - 2017)
 
-🌟 **Passion**: I'm excited about bringing a customer-first approach and fresh ideas to the world of web development.
-
-📫 **Let's Connect!**: Feel free to reach out for collaboration, coding discussions, or just to say hi. I'm always eager to learn, open for feedback and want to grow in this ever-evolving tech landscape.
+📫 **Let's Connect!**: Feel free to reach out for collaboration, coding discussions, or just to say hi. I'm always eager to learn, open for feedback and want to grow in this ever-evolving tech landscape. (Linkedin) (Email)
 
 Happy coding! 🚀
