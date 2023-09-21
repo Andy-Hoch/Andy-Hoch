@@ -10,11 +10,11 @@
     <title></title>
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/bootstrap-5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/bootstrap-5.3.2/css/bootstrap.css">
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
-    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <nav class="navbar navbar-expand-lg">
       <div class="container">
         <a class="navbar-brand" href="/">Andreas Hoch</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,9 +45,30 @@
         </div>
       </div>
     </nav>
-    <div class="container py-5">
-      <h1>Mein Portfolio</h1>
-      <p>Loading<span id="loading"></span></p>
+    <div class="container d-flex align-content-center justify-content-center" style="min-height: 60vh;">
+      <div class="row">
+        <div class="col-6 my-auto">
+          <h1>Full-Stack Web Developer 👋</h1>
+          <p>Hi, I'm Andreas Hoch, a passionate Web Developer based in Cologne, Germany (until 06/2024)/ Stuttgart, Germany (from 07/2023) and while I am learning even more web technologies, I am looking for a job.</p>
+          <div class="d-flex gap-3">
+            <a href="https://www.linkedin.com/in/Andy-Hoch">
+              <button type="button" class="btn btn-primary position-relative">
+                LinkedIn
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                  1
+                  <span class="visually-hidden">Contact to add...</span>
+                </span>
+              </button>
+            </a>
+            <a href="https://www.github.com/Andy-Hoch">
+              <button class="btn btn-primary">Github</button>
+            </a>
+          </div>
+        </div>
+        <div class="col-6 my-auto">
+          <p>Loading<span id="loading"></span></p>
+        </div>
+      </div>
     </div>
     <script src="/popper/popper.min.js" async defer></script>
     <script src="/bootstrap-5.3.2/js/bootstrap.min.js" async defer></script>
