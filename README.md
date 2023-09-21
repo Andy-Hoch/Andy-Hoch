@@ -13,18 +13,18 @@ I'm Andy, a Full-Stack Developer with a background in digital marketing. I'm pas
 💼 **Professional Background**: I've also worked as an Online Marketing Manager at [Adcologne GmbH](https://www.adcologne.de/) and as a Digital Lead at [citychurch](https://citychurch.koeln), where I've honed my skills in leadership, technical marketing and digital infrastructure management.
 
 🛠️ **Technical Skills**: <br>
-<img src="https://lyqwid.com/wp-content/uploads/2015/04/Javascript-Logo.png" alt="Javascript" width="30" height="30"/> 
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original-wordmark.svg" alt="HTML" width="30" height="30"/> 
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original-wordmark.svg" alt="CSS" width="30" height="30"/> 
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/bootstrap/bootstrap-plain-wordmark.svg" alt="Bootstrap" width="30" height="30"/> 
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/ruby/ruby-original.svg" alt="Ruby" width="30" height="30"/> 
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/rails/rails-original-wordmark.svg" alt="Ruby on Rails" width="30" height="30"/> 
-<img src="https://user-images.githubusercontent.com/40461634/114240226-2f506580-9955-11eb-849b-e2a25117d681.png" alt="figma" width="30" height="30"/> 
-<img src="https://www.vectorlogo.zone/logos/figma/figma-icon.svg" alt="figma" width="30" height="30"/> 
+<img src="https://lyqwid.com/wp-content/uploads/2015/04/Javascript-Logo.png" alt="Javascript" width="30" height="30"/>
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original-wordmark.svg" alt="HTML" width="30" height="30"/>
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original-wordmark.svg" alt="CSS" width="30" height="30"/>
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/bootstrap/bootstrap-plain-wordmark.svg" alt="Bootstrap" width="30" height="30"/>
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/ruby/ruby-original.svg" alt="Ruby" width="30" height="30"/>
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/rails/rails-original-wordmark.svg" alt="Ruby on Rails" width="30" height="30"/>
+<img src="https://user-images.githubusercontent.com/40461634/114240226-2f506580-9955-11eb-849b-e2a25117d681.png" alt="figma" width="30" height="30"/>
+<img src="https://www.vectorlogo.zone/logos/figma/figma-icon.svg" alt="figma" width="30" height="30"/>
 
 📚 **Education**:
 Web Development Bootcamp, Le Wagon (07/2023 - 09/2023) | Bachelor of Media Management, Rheinische Fachhochschule Köln (2014 - 2017)
 
-📫 **Let's Connect!**: Feel free to reach out for collaboration, coding discussions, or just to say hi. I'm always eager to learn, open for feedback and want to grow in this ever-evolving tech landscape. (Linkedin) (Email)
+📫 **Let's Connect!**: Feel free to reach out for collaboration, coding discussions, or just to say hi. I'm always eager to learn, open for feedback and want to grow in this ever-evolving tech landscape. [Linkedin](https://www.linkedin.com/in/andreas-hoch/) [Email an andreas.hoch@me.com](mailto:gleitet.foyers_0u@icloud.com)
 
 Happy coding! 🚀
