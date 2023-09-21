@@ -25,8 +25,8 @@ I'm Andy, a Full-Stack Developer with a background in digital marketing. I'm pas
 📚 **Education**:
 Web Development Bootcamp, Le Wagon (07/2023 - 09/2023) | Bachelor of Media Management, Rheinische Fachhochschule Köln (2014 - 2017)
 
-📫 **Let's Connect!**: Feel free to reach out for collaboration, coding discussions, or just to say hi. I'm always eager to learn, open for feedback and want to grow in this ever-evolving tech landscape.
-[via Linkedin](https://www.linkedin.com/in/andreas-hoch/) 
-[via Email andreas.hoch@me.com](mailto:gleitet.foyers_0u@icloud.com)
+📫 **Let's Connect!**: Feel free to reach out for collaboration, coding discussions, or just to say hi. I'm always eager to learn, open for feedback and want to grow in this ever-evolving tech landscape.<br>
+[Connect via Linkedin](https://www.linkedin.com/in/andreas-hoch/) <br>
+[Connect via Email andreas.hoch@me.com](mailto:gleitet.foyers_0u@icloud.com)
 
 Happy coding! 🚀
