@@ -7,6 +7,10 @@ body {
   background-color: var(--background-color);
 }
 
+#head {
+  min-height: 80vh;
+}
+
 .navbar {
   background-color: var(--accent-color)!important;
 }
