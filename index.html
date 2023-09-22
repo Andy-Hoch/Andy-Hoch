@@ -7,8 +7,8 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title></title>
-    <meta name="description" content="">
+    <title>Andreas Hoch</title>
+    <meta name="description" content="My Portfolio and my Profile">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="/media/favicon-96x96.png" type="image/x-icon">
     <link rel="stylesheet" href="/bootstrap-5.3.2/css/bootstrap.css">
@@ -30,7 +30,7 @@
               <a class="nav-link" href="mailto:a.hoch@me.com">Say Hi!</a>
             </li>
             <li class="nav-item">
-              <a class="btn btn-light" href="/start.html">🇩🇪</a>
+              <a class="btn btn-light" href="/de/">🇩🇪</a>
             </li>
             <!-- <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -46,23 +46,23 @@
         </div>
       </div>
     </nav>
-    <div class="container d-flex align-content-center justify-content-center" style="min-height: 60vh;">
+    <div id="head" class="container d-flex align-content-center justify-content-center">
       <div class="row">
 
-        <div class="col-12 col-sm-4 my-auto p-4 d-flex justify-content-center">
+        <div class="col-12 col-md-4 my-auto p-4 d-flex justify-content-center">
           <!-- <p>Loading<span id="loading"></span></p> -->
           <img src="/media/profile-andy.jpg" alt="Profile Image of AndyHoch" style="max-width: 300px;" class="rounded-circle w-100">
         </div>
-        <div class="col-12 col-sm-8 my-auto py-4">
+        <div class="col-12 col-md-8 my-auto py-4">
           <h1>Full-Stack Web Developer 👋</h1>
           <p>Hi, I'm Andreas Hoch, a passionate Web Developer based in Cologne, Germany (until 06/2024)/ Stuttgart, Germany (from 07/2023) and while I am learning even more web technologies, I am looking for a job.</p>
-          <div class="d-flex gap-3">
+          <div class="d-flex flex-wrap gap-3">
             <a href="https://www.linkedin.com/in/Andy-Hoch">
               <button type="button" class="btn btn-primary position-relative">
                 LinkedIn
                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                   1
-                  <span class="visually-hidden">Contact to add...</span>
+                  <span class="visually-hidden"> Contact to add...</span>
                 </span>
               </button>
             </a>
@@ -70,11 +70,27 @@
               <button class="btn btn-primary">Github</button>
             </a>
           </div>
+          <h4 class="mt-4">My Tech Stack:</h4>
+          <div class="d-flex flex-wrap gap-3">
+            <img src="https://lyqwid.com/wp-content/uploads/2015/04/Javascript-Logo.png" alt="Javascript" width="30" height="30"/>
+            <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original-wordmark.svg" alt="HTML" width="30" height="30"/>
+            <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original-wordmark.svg" alt="CSS" width="30" height="30"/>
+            <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/bootstrap/bootstrap-plain-wordmark.svg" alt="Bootstrap" width="30" height="30"/>
+            <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/ruby/ruby-original.svg" alt="Ruby" width="30" height="30"/>
+            <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/rails/rails-original-wordmark.svg" alt="Ruby on Rails" width="30" height="30"/>
+            <img src="https://user-images.githubusercontent.com/40461634/114240226-2f506580-9955-11eb-849b-e2a25117d681.png" alt="figma" width="30" height="30"/>
+            <img src="https://www.vectorlogo.zone/logos/figma/figma-icon.svg" alt="figma" width="30" height="30"/>
+          </div>
         </div>
       </div>
     </div>
+    <div class="container d-flex justify-content-center">
+      <p class="btn btn-outline-primary" style="min-width: 311px; text-align: left; max-width: 100%;">
+        Portfolio currently under construction<span id="loading"></span>
+      </button>
+    </div>
     <script src="/popper/popper.min.js" async defer></script>
     <script src="/bootstrap-5.3.2/js/bootstrap.min.js" async defer></script>
-    <script src="app.js" async defer></script>
+    <script src="/app.js" async defer></script>
   </body>
 </html>
