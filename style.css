@@ -87,3 +87,7 @@ h1:hover > .wiggle {
 display: inline-block;
 animation: wiggle .2s infinite;
 }
+
+#skills > i {
+  font-size: 30px;
+}
