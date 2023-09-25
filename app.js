@@ -8,7 +8,6 @@ function addDot() {
       dots = '';
       loading.textContent = '';
   }
-  console.log(dots);
 }
 
 setInterval(addDot, 1000);
