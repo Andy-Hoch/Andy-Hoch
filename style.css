@@ -31,7 +31,7 @@ body {
 #li-alert, #gh-alert {
   max-width: 0px;
   transition: max-width 0.5s ease-in-out;
-  text-wrap: nowrap;
+  white-space: nowrap;
   overflow: hidden;
 }
 
@@ -90,4 +90,7 @@ animation: wiggle .2s infinite;
 
 #skills > i {
   font-size: 30px;
+
+span.underline-primary {
+  background-image: linear-gradient(0deg, #feae00 30%, transparent 30%);
 }
