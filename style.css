@@ -73,19 +73,18 @@ body {
 } */
 
 @keyframes wiggle {
-  0% { transform: rotate(0deg); }
- 25% { transform: rotate(5deg); }
- 75% { transform: rotate(-5deg); }
-100% { transform: rotate(0deg); }
+  0% { -webkit-transform: rotate(0deg); transform: rotate(0deg); }
+  25% { -webkit-transform: rotate(5deg); transform: rotate(5deg); }
+  75% { -webkit-transform: rotate(-5deg); transform: rotate(-5deg); }
+  100% { -webkit-transform: rotate(0deg); transform: rotate(0deg); }
 }
 
 .wiggle {
-  animation: none;
-  }
+display: inline-block;  }
 
 h1:hover > .wiggle {
-display: inline-block;
-animation: wiggle .2s infinite;
+  -webkit-animation: wiggle 0.2s infinite;
+  animation: wiggle 0.2s infinite;
 }
 
 span.underline-primary {
@@ -94,40 +93,52 @@ span.underline-primary {
 
 @keyframes changeRadius {
   0% {
-      border-radius: 5% 5% 5% 5%;
+    border-radius: 5% 5% 5% 5%;
+    -webkit-border-radius: 5% 5% 5% 5%;
   }
   11% {
-      border-radius: 50% 5% 5% 5%;
+    border-radius: 50% 5% 5% 5%;
+    -webkit-border-radius: 50% 5% 5% 5%;
   }
   22% {
     border-radius: 50% 50% 5% 5%;
+    -webkit-border-radius: 50% 50% 5% 5%;
   }
   33% {
     border-radius: 50% 50% 50% 5%;
+    -webkit-border-radius: 50% 50% 50% 5%;
   }
   44% {
     border-radius: 50% 50% 50% 50%;
+    -webkit-border-radius: 50% 50% 50% 50%;
   }
   55% {
     border-radius: 50% 50% 50% 50%;
+    -webkit-border-radius: 50% 50% 50% 50%;
   }
   66% {
     border-radius: 50% 50% 50% 5%;
+    -webkit-border-radius: 50% 50% 50% 5%;
   }
   77% {
     border-radius: 50% 50% 5% 5%;
+    -webkit-border-radius: 50% 50% 5% 5%;
   }
   88% {
     border-radius: 50% 5% 5% 5%;
+    -webkit-border-radius: 50% 5% 5% 5%;
   }
   99% {
     border-radius: 5% 5% 5% 5%;
+    -webkit-border-radius: 5% 5% 5% 5%;
   }
   100% {
     border-radius: 5% 5% 5% 5%;
+    -webkit-border-radius: 5% 5% 5% 5%;
   }
 }
 
 #profileimage {
   animation: changeRadius 20s infinite;
+  -webkit-animation: changeRadius 20s infinite;
 }
