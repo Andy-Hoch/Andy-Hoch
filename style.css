@@ -39,48 +39,19 @@ body {
   max-width: 500px;
 }
 
-/* .profile {
-  max-width: 300px;
-  width: 100%;
-  background-image: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0)), url(/media/profile-andy.jpg);
-  background-size: cover;
-  background-position: center;
-  aspect-ratio: 1/1;
-  border-radius: 50%;
-  transition: all 0.5s ease-in-out;
-}
-
-.profile:hover {
-  max-width: 300px;
-  width: 100%;
-  background-image: url(/media/profile-andy.jpg);
-  background-size: cover;
-  background-position: center;
-  aspect-ratio: 1/1;
+#profileimage {
+  -webkit-border-radius: 50%;
   border-radius: 50%;
 }
 
-.profile > img {
-  display: relative;
-  transform: scale(0.4);
-  opacity: 0;
-  transition: all 0.5s ease-in-out;
-}
-
-.profile:hover > img {
-  transform: scale(0.5);
-  opacity: 0.5;
-} */
-
-@keyframes wiggle {
-  0% { -webkit-transform: rotate(0deg); transform: rotate(0deg); }
-  25% { -webkit-transform: rotate(5deg); transform: rotate(5deg); }
-  75% { -webkit-transform: rotate(-5deg); transform: rotate(-5deg); }
-  100% { -webkit-transform: rotate(0deg); transform: rotate(0deg); }
+span.underline-primary {
+  -webkit-background-image: linear-gradient(0deg, #feae00 30%, transparent 30%);
+  background-image: linear-gradient(0deg, #feae00 30%, transparent 30%);
 }
 
 .wiggle {
-display: inline-block;  }
+  display: inline-block;
+}
 
 h1:hover > .wiggle {
   -webkit-animation: wiggle 0.2s infinite;
@@ -89,10 +60,27 @@ h1:hover > .wiggle {
 
 #skills > i {
   font-size: 30px;
-
-span.underline-primary {
-  background-image: linear-gradient(0deg, #feae00 30%, transparent 30%);
 }
+
+/* Animationen */
+
+@keyframes wiggle {
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  25% {
+    -webkit-transform: rotate(5deg);
+    transform: rotate(5deg);
+  }
+  75% {
+    -webkit-transform: rotate(-5deg);
+    transform: rotate(-5deg);
+  }
+  100% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
 
 @keyframes changeRadius {
   0% {
@@ -139,11 +127,4 @@ span.underline-primary {
     -webkit-border-radius: 5% 5% 5% 5%;
     border-radius: 5% 5% 5% 5%;
   }
-}
-
-#profileimage {
-  -webkit-border-radius: 50%;
-  border-radius: 50%;
-  /* animation: changeRadius 20s infinite;
-  -webkit-animation: changeRadius 20s infinite; */
 }
