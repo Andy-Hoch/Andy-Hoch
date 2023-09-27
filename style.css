@@ -81,6 +81,7 @@ h1:hover > .wiggle {
     -webkit-transform: rotate(0deg);
     transform: rotate(0deg);
   }
+}
 
 @keyframes changeRadius {
   0% {
