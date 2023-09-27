@@ -142,6 +142,8 @@ span.underline-primary {
 }
 
 #profileimage {
+  border-radius: 50%;
+  -webkit-border-radius: 50%;
   animation: changeRadius 20s infinite;
   -webkit-animation: changeRadius 20s infinite;
 }
