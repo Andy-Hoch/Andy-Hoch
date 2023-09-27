@@ -93,54 +93,54 @@ span.underline-primary {
 
 @keyframes changeRadius {
   0% {
-    border-radius: 5% 5% 5% 5%;
     -webkit-border-radius: 5% 5% 5% 5%;
+    border-radius: 5% 5% 5% 5%;
   }
   11% {
-    border-radius: 50% 5% 5% 5%;
     -webkit-border-radius: 50% 5% 5% 5%;
+    border-radius: 50% 5% 5% 5%;
   }
   22% {
-    border-radius: 50% 50% 5% 5%;
     -webkit-border-radius: 50% 50% 5% 5%;
+    border-radius: 50% 50% 5% 5%;
   }
   33% {
-    border-radius: 50% 50% 50% 5%;
     -webkit-border-radius: 50% 50% 50% 5%;
+    border-radius: 50% 50% 50% 5%;
   }
   44% {
-    border-radius: 50% 50% 50% 50%;
     -webkit-border-radius: 50% 50% 50% 50%;
+    border-radius: 50% 50% 50% 50%;
   }
   55% {
-    border-radius: 50% 50% 50% 50%;
     -webkit-border-radius: 50% 50% 50% 50%;
+    border-radius: 50% 50% 50% 50%;
   }
   66% {
-    border-radius: 50% 50% 50% 5%;
     -webkit-border-radius: 50% 50% 50% 5%;
+    border-radius: 50% 50% 50% 5%;
   }
   77% {
-    border-radius: 50% 50% 5% 5%;
     -webkit-border-radius: 50% 50% 5% 5%;
+    border-radius: 50% 50% 5% 5%;
   }
   88% {
-    border-radius: 50% 5% 5% 5%;
     -webkit-border-radius: 50% 5% 5% 5%;
+    border-radius: 50% 5% 5% 5%;
   }
   99% {
-    border-radius: 5% 5% 5% 5%;
     -webkit-border-radius: 5% 5% 5% 5%;
+    border-radius: 5% 5% 5% 5%;
   }
   100% {
-    border-radius: 5% 5% 5% 5%;
     -webkit-border-radius: 5% 5% 5% 5%;
+    border-radius: 5% 5% 5% 5%;
   }
 }
 
 #profileimage {
-  border-radius: 50%;
   -webkit-border-radius: 50%;
+  border-radius: 50%;
   /* animation: changeRadius 20s infinite;
   -webkit-animation: changeRadius 20s infinite; */
 }
