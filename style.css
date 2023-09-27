@@ -87,6 +87,9 @@ h1:hover > .wiggle {
   animation: wiggle 0.2s infinite;
 }
 
+#skills > i {
+  font-size: 30px;
+
 span.underline-primary {
   background-image: linear-gradient(0deg, #feae00 30%, transparent 30%);
 }
