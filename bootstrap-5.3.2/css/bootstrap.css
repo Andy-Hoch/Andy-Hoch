@@ -6852,8 +6852,48 @@ textarea.form-control-lg {
   content: "";
 }
 
-.text-bg-primary {
+.text-bg-ruby {
   color: #fff !important;
+  background-color: #A91401 !important;
+}
+
+.text-bg-scss {
+  color: #fff !important;
+  background-color: #c69 !important;
+}
+
+.text-bg-html {
+  color: #fff !important;
+  background-color: #e34c26 !important;
+}
+
+.text-bg-rails {
+  color: #fff !important;
+  background-color: #c00 !important;
+}
+
+.text-bg-js {
+  color: #000 !important;
+  background-color: #f7df1e !important;
+}
+
+.text-bg-pwa {
+  color: #fff !important;
+  background-color: #5a0fc8 !important;
+}
+
+.text-bg-airtable {
+  color: #fff !important;
+  background-color: #f82b60 !important;
+}
+
+.text-bg-figma {
+  color: #fff !important;
+  background-color: #ff3B00 !important;
+}
+
+.text-bg-primary {
+  color: #000 !important;
   background-color: RGBA(var(--bs-primary-rgb), var(--bs-bg-opacity, 1)) !important;
 }
 
