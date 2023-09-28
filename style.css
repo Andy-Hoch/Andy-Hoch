@@ -8,7 +8,8 @@ body {
 }
 
 #head {
-  min-height: 80vh;
+  min-height: 70vh;
+  margin-bottom: 2rem;
 }
 
 .navbar {
@@ -42,6 +43,11 @@ body {
 #profileimage {
   -webkit-border-radius: 50%;
   border-radius: 50%;
+}
+
+.max-80vh {
+  max-height: 80vh;
+  max-width: 100%;
 }
 
 span.underline-primary {
