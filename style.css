@@ -68,6 +68,10 @@ h1:hover > .wiggle {
   font-size: 30px;
 }
 
+a {
+  max-width: fit-content;
+}
+
 /* Animationen */
 
 @keyframes wiggle {
