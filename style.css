@@ -70,6 +70,11 @@ h1:hover > .wiggle {
 
 a {
   max-width: fit-content;
+  text-decoration: none;
+}
+
+footer {
+  font-size: .75rem;
 }
 
 /* Animationen */
