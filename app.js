@@ -10,4 +10,4 @@ function addDot() {
   }
 }
 
-setInterval(addDot, 1000);
+setInterval(addDot, 500);
