@@ -94,6 +94,13 @@ function getCardColor(value) {
   return colors[value] || "#999";
 }
 
+function shuffle(deck) {
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+}
+
 function createDeck() {
   deck = [];
 
@@ -105,7 +112,7 @@ function createDeck() {
     }
   }
 
-  deck.sort(() => Math.random() - 0.5);
+  shuffle(deck)
 }
 
 function startGame() {
