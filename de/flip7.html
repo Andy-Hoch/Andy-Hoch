@@ -181,21 +181,24 @@ function stopTurn() {
 }
 
 function nextPlayer() {
-  const activePlayers = players.filter(p => p.status === "active");
+  const activePlayers = players
+    .map((p, i) => ({ ...p, index: i }))
+    .filter(p => p.status === "active");
 
-  // ❗ Runde nur beenden, wenn KEIN Spieler mehr aktiv ist
+  // ❗ Runde endet nur wenn keiner mehr aktiv ist
   if (activePlayers.length === 0) {
     endRound();
     return;
   }
 
-  // 👉 Wenn aktueller Spieler noch aktiv ist und der einzige ist → bleibt dran
-  if (activePlayers.length === 1 && players[currentPlayer].status === "active") {
+  // 👉 Wenn nur noch ein Spieler aktiv ist
+  if (activePlayers.length === 1) {
+    currentPlayer = activePlayers[0].index; // 🔥 WICHTIG!
     updateUI();
     return;
   }
 
-  // 👉 sonst nächsten aktiven Spieler finden
+  // 👉 Nächsten aktiven Spieler finden
   do {
     currentPlayer = (currentPlayer + 1) % players.length;
   } while (players[currentPlayer].status !== "active");
