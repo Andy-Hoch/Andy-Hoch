@@ -181,15 +181,21 @@ function stopTurn() {
 }
 
 function nextPlayer() {
-  // Prüfe ob Runde vorbei ist
   const activePlayers = players.filter(p => p.status === "active");
 
-  if (activePlayers.length <= 1) {
+  // ❗ Runde nur beenden, wenn KEIN Spieler mehr aktiv ist
+  if (activePlayers.length === 0) {
     endRound();
     return;
   }
 
-  // nächsten aktiven Spieler finden
+  // 👉 Wenn aktueller Spieler noch aktiv ist und der einzige ist → bleibt dran
+  if (activePlayers.length === 1 && players[currentPlayer].status === "active") {
+    updateUI();
+    return;
+  }
+
+  // 👉 sonst nächsten aktiven Spieler finden
   do {
     currentPlayer = (currentPlayer + 1) % players.length;
   } while (players[currentPlayer].status !== "active");
