@@ -4,17 +4,52 @@
 <meta charset="UTF-8">
 <title>Flip 7</title>
 <style>
-  body { font-family: Arial; text-align: center; }
-  .card { 
-    display: inline-block; 
-    padding: 10px 15px; 
-    margin: 5px; 
-    border: 2px solid black; 
-    border-radius: 6px; 
-    font-size: 20px; 
+  body {
+    font-family: Arial;
+    text-align: center;
+    background: #f4f4f4;
   }
-  .active { background-color: #d4edda; }
-  button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+
+  .card {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 70px;
+    height: 100px;
+    margin: 6px;
+    border-radius: 12px;
+    border: 3px solid #333;
+    font-size: 32px;
+    font-weight: bold;
+    color: white;
+    box-shadow: 2px 4px 8px rgba(0,0,0,0.2);
+  }
+
+  .player {
+    margin: 15px;
+    padding: 10px;
+    border-radius: 10px;
+    background: white;
+  }
+
+  .active {
+    outline: 4px solid #4caf50;
+  }
+
+  button {
+    padding: 12px 24px;
+    margin: 10px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
+    background: #333;
+    color: white;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: #555;
+  }
 </style>
 </head>
 <body>
@@ -39,6 +74,25 @@ let players = [];
 let currentPlayer = 0;
 let deck = [];
 let gameOver = false;
+
+function getCardColor(value) {
+  const colors = [
+    "#6c757d", // 0
+    "#007bff",
+    "#28a745",
+    "#ffc107",
+    "#dc3545",
+    "#17a2b8",
+    "#6610f2",
+    "#fd7e14",
+    "#20c997",
+    "#e83e8c",
+    "#343a40",
+    "#ff5733",
+    "#6f42c1"
+  ];
+  return colors[value] || "#999";
+}
 
 function createDeck() {
   deck = [];
