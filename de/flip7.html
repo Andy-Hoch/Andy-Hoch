@@ -139,13 +139,13 @@ function drawCard() {
   if (player.status !== "active") return;
 
   const card = deck.pop();
-
+  
   if (player.roundCards.includes(card)) {
-    alert(`Spieler ${currentPlayer + 1} bust!`);
-    player.roundCards = [];
-    player.status = "bust";
-    nextPlayer();
-    return;
+  player.roundCards.push(card); // Karte trotzdem anzeigen
+  alert(`Spieler ${currentPlayer + 1} bust!`);
+  player.status = "bust";
+  nextPlayer();
+  return;
   }
 
   player.roundCards.push(card);
