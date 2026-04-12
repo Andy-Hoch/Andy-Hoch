@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Flip 7</title>
+<style>
+  body { font-family: Arial; text-align: center; }
+  .card { 
+    display: inline-block; 
+    padding: 10px 15px; 
+    margin: 5px; 
+    border: 2px solid black; 
+    border-radius: 6px; 
+    font-size: 20px; 
+  }
+  .active { background-color: #d4edda; }
+  button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+</style>
+</head>
+<body>
+
+<h1>Flip 7</h1>
+
+<div id="setup">
+  <label>Spieleranzahl (2–4): </label>
+  <input type="number" id="playerCount" min="2" max="4" value="2">
+  <button onclick="startGame()">Spiel starten</button>
+</div>
+
+<div id="game" style="display:none;">
+  <h2 id="status"></h2>
+  <div id="players"></div>
+  <button onclick="drawCard()">Karte ziehen</button>
+  <button onclick="stopTurn()">Stopp</button>
+</div>
+
+<script>
+let players = [];
+let currentPlayer = 0;
+let deck = [];
+let gameOver = false;
+
+function createDeck() {
+  deck = [];
+  for (let i = 0; i <= 12; i++) {
+    for (let j = 0; j < 3; j++) { // jede Zahl 3x
+      deck.push(i);
+    }
+  }
+  deck.sort(() => Math.random() - 0.5);
+}
+
+function startGame() {
+  const count = parseInt(document.getElementById("playerCount").value);
+  players = [];
+  for (let i = 0; i < count; i++) {
+    players.push({
+      score: 0,
+      roundCards: [],
+      stopped: false
+    });
+  }
+
+  document.getElementById("setup").style.display = "none";
+  document.getElementById("game").style.display = "block";
+
+  startRound();
+}
+
+function startRound() {
+  createDeck();
+  players.forEach(p => {
+    p.roundCards = [];
+    p.stopped = false;
+  });
+  currentPlayer = 0;
+  gameOver = false;
+  updateUI();
+}
+
+function drawCard() {
+  if (gameOver) return;
+
+  const player = players[currentPlayer];
+  const card = deck.pop();
+
+  if (player.roundCards.includes(card)) {
+    alert("Bust! Doppelte Zahl gezogen.");
+    player.roundCards = [];
+    player.stopped = true;
+    nextPlayer();
+    return;
+  }
+
+  player.roundCards.push(card);
+
+  if (player.roundCards.length === 7) {
+    alert("Flip 7! Runde gewonnen!");
+    endRound(currentPlayer);
+    return;
+  }
+
+  updateUI();
+}
+
+function stopTurn() {
+  if (gameOver) return;
+
+  players[currentPlayer].stopped = true;
+  nextPlayer();
+}
+
+function nextPlayer() {
+  if (players.every(p => p.stopped)) {
+    endRound();
+    return;
+  }
+
+  do {
+    currentPlayer = (currentPlayer + 1) % players.length;
+  } while (players[currentPlayer].stopped);
+
+  updateUI();
+}
+
+function endRound(winner = null) {
+  gameOver = true;
+
+  players.forEach((p, i) => {
+    if (winner === i) {
+      p.score += p.roundCards.reduce((a, b) => a + b, 0) + 15; // Bonus
+    } else {
+      p.score += p.roundCards.reduce((a, b) => a + b, 0);
+    }
+  });
+
+  if (players.some(p => p.score >= 200)) {
+    const winnerIndex = players.findIndex(p => p.score >= 200);
+    alert("Spieler " + (winnerIndex + 1) + " gewinnt das Spiel!");
+    location.reload();
+    return;
+  }
+
+  setTimeout(startRound, 2000);
+}
+
+function updateUI() {
+  document.getElementById("status").innerText =
+    "Spieler " + (currentPlayer + 1) + " ist am Zug";
+
+  const container = document.getElementById("players");
+  container.innerHTML = "";
+
+  players.forEach((p, i) => {
+    const div = document.createElement("div");
+    if (i === currentPlayer) div.classList.add("active");
+
+    div.innerHTML = `
+      <h3>Spieler ${i + 1} (Punkte: ${p.score})</h3>
+      ${p.roundCards.map(c => `<span class="card">${c}</span>`).join("")}
+    `;
+
+    container.appendChild(div);
+  });
+}
+</script>
+
+</body>
+</html>
