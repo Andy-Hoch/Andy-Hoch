@@ -43,7 +43,7 @@ let gameOver = false;
 function createDeck() {
   deck = [];
   for (let i = 0; i <= 12; i++) {
-    for (let j = 0; j < 3; j++) { // jede Zahl 3x
+    for (let j = 0; j < 3; j++) {
       deck.push(i);
     }
   }
@@ -57,7 +57,7 @@ function startGame() {
     players.push({
       score: 0,
       roundCards: [],
-      stopped: false
+      status: "active" // active | stopped | bust
     });
   }
 
@@ -71,7 +71,7 @@ function startRound() {
   createDeck();
   players.forEach(p => {
     p.roundCards = [];
-    p.stopped = false;
+    p.status = "active";
   });
   currentPlayer = 0;
   gameOver = false;
@@ -82,12 +82,14 @@ function drawCard() {
   if (gameOver) return;
 
   const player = players[currentPlayer];
+  if (player.status !== "active") return;
+
   const card = deck.pop();
 
   if (player.roundCards.includes(card)) {
-    alert("Bust! Doppelte Zahl gezogen.");
+    alert(`Spieler ${currentPlayer + 1} bust!`);
     player.roundCards = [];
-    player.stopped = true;
+    player.status = "bust";
     nextPlayer();
     return;
   }
@@ -95,30 +97,35 @@ function drawCard() {
   player.roundCards.push(card);
 
   if (player.roundCards.length === 7) {
-    alert("Flip 7! Runde gewonnen!");
+    alert(`Spieler ${currentPlayer + 1} hat Flip 7!`);
     endRound(currentPlayer);
     return;
   }
 
-  updateUI();
+  nextPlayer();
 }
 
 function stopTurn() {
   if (gameOver) return;
 
-  players[currentPlayer].stopped = true;
+  const player = players[currentPlayer];
+  player.status = "stopped";
   nextPlayer();
 }
 
 function nextPlayer() {
-  if (players.every(p => p.stopped)) {
+  // Prüfe ob Runde vorbei ist
+  const activePlayers = players.filter(p => p.status === "active");
+
+  if (activePlayers.length <= 1) {
     endRound();
     return;
   }
 
+  // nächsten aktiven Spieler finden
   do {
     currentPlayer = (currentPlayer + 1) % players.length;
-  } while (players[currentPlayer].stopped);
+  } while (players[currentPlayer].status !== "active");
 
   updateUI();
 }
@@ -127,10 +134,14 @@ function endRound(winner = null) {
   gameOver = true;
 
   players.forEach((p, i) => {
-    if (winner === i) {
-      p.score += p.roundCards.reduce((a, b) => a + b, 0) + 15; // Bonus
-    } else {
-      p.score += p.roundCards.reduce((a, b) => a + b, 0);
+    if (p.status !== "bust") {
+      let points = p.roundCards.reduce((a, b) => a + b, 0);
+
+      if (winner === i) {
+        points += 15;
+      }
+
+      p.score += points;
     }
   });
 
@@ -153,10 +164,15 @@ function updateUI() {
 
   players.forEach((p, i) => {
     const div = document.createElement("div");
+
     if (i === currentPlayer) div.classList.add("active");
 
+    let statusText = "";
+    if (p.status === "bust") statusText = "💥 Bust";
+    if (p.status === "stopped") statusText = "🛑 Gestoppt";
+
     div.innerHTML = `
-      <h3>Spieler ${i + 1} (Punkte: ${p.score})</h3>
+      <h3>Spieler ${i + 1} (Punkte: ${p.score}) ${statusText}</h3>
       ${p.roundCards.map(c => `<span class="card">${c}</span>`).join("")}
     `;
 
