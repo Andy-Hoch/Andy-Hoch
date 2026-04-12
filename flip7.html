@@ -1,0 +1,8 @@
+function drawCard() {
+    // Existing logic for drawing a card
+    if (playerBusted || isFlip7) {
+        // Ensure to change player after a bust or Flip 7
+        currentPlayer = (currentPlayer === player1) ? player2 : player1;
+    }
+    // Other game logic
+}
