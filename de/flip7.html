@@ -144,13 +144,22 @@ function drawCard() {
 
   const card = deck.pop();
   
+
   if (player.roundCards.includes(card)) {
-  player.roundCards.push(card); // Karte trotzdem anzeigen
-  alert(`Spieler ${currentPlayer + 1} bust!`);
+  player.roundCards.push(card); // Karte hinzufügen (WICHTIG)
+
   player.status = "bust";
-  nextPlayer();
+
+  updateUI(); // 👉 UI sofort aktualisieren
+
+  setTimeout(() => {
+    alert(`Spieler ${currentPlayer + 1} bust!`);
+    nextPlayer();
+  }, 100);
+
   return;
   }
+
 
   player.roundCards.push(card);
 
@@ -232,11 +241,25 @@ div.classList.add("player");
 
     div.innerHTML = `
       <h3>Spieler ${i + 1} (Punkte: ${p.score}) ${statusText}</h3>
-      ${p.roundCards.map(c => `
-  <span class="card" style="background:${getCardColor(c)}">
-    ${c}
-  </span>
-`).join("")}
+      ${p.roundCards.map((c, index, arr) => {
+  const isLast = index === arr.length - 1;
+
+  let extraStyle = "";
+
+  if (p.status === "bust" && isLast) {
+    extraStyle = "border:4px solid red; transform:scale(1.1);";
+  }
+
+  if (p.roundCards.length === 7 && isLast) {
+    extraStyle = "outline:4px solid gold; transform:scale(1.1);";
+  }
+
+  return `
+    <span class="card" style="background:${getCardColor(c)}; ${extraStyle}">
+      ${c}
+    </span>
+  `;
+}).join("")}
     `;
 
     container.appendChild(div);
