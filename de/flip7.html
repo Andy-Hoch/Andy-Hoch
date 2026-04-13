@@ -45,30 +45,37 @@
 
   /* 🃏 Karten */
 .cards {
-  min-height: 80px;
+  min-height: 90px;
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 10px;
+}
+
+.card {
+  display: inline-flex;
   justify-content: center;
   align-items: center;
+
+  width: 50px;
+  height: 70px;
+
+  border-radius: 10px;
+  border: 2px solid #333;
+
+  font-size: 22px;
+  font-weight: bold;
+  color: white;
+
+  box-shadow: 1px 2px 5px rgba(0,0,0,0.2);
+
+  /* 🔥 DAS IST DER TRICK */
+  margin-left: -20px;
 }
-  .card {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
 
-    width: 50px;
-    height: 70px;
-
-    margin: 4px;
-    border-radius: 10px;
-    border: 2px solid #333;
-
-    font-size: 22px;
-    font-weight: bold;
-    color: white;
-
-    box-shadow: 1px 2px 5px rgba(0,0,0,0.2);
-  }
+.card:first-child {
+  margin-left: 0;
+}
 
   /* 📱 Buttons */
   .controls {
