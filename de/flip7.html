@@ -332,7 +332,7 @@ function endRound(winner = null) {
 
   if (players.some(p => p.score >= 200)) {
     const winnerIndex = players.findIndex(p => p.score >= 200);
-    alert(`${players[winnerIndex].name} gewinnt das Spiel mit {p.score} Punkten!`);
+    alert(`${players[winnerIndex].name} gewinnt das Spiel mit ${players[winnerIndex].score} Punkten!`);
     location.reload();
     return;
   }
