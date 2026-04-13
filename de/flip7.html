@@ -258,7 +258,7 @@ function drawCard() {
   updateUI(); // 👉 UI sofort aktualisieren
 
   setTimeout(() => {
-    alert(`Spieler ${currentPlayer + 1} bust!`);
+    alert(`${player.name} bust!`);
     nextPlayer();
   }, 100);
 
@@ -269,7 +269,7 @@ function drawCard() {
   player.roundCards.push(card);
 
   if (player.roundCards.length === 7) {
-    alert(`Spieler ${currentPlayer + 1} hat Flip 7!`);
+    alert(`${player.name} hat Flip 7!`);
     endRound(currentPlayer);
     return;
   }
@@ -328,7 +328,7 @@ function endRound(winner = null) {
 
   if (players.some(p => p.score >= 200)) {
     const winnerIndex = players.findIndex(p => p.score >= 200);
-    alert("Spieler " + (winnerIndex + 1) + " gewinnt das Spiel!");
+    alert(`${players[winnerIndex].name} gewinnt das Spiel mit {p.score} Punkten!`);
     location.reload();
     return;
   }
