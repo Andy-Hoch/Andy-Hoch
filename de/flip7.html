@@ -147,7 +147,8 @@
 
 <script>
 let players = [];
-let currentPlayer = 0;
+let startingPlayer = 0;
+let currentPlayer = startingPlayer;
 let deck = [];
 let gameOver = false;
 
@@ -335,7 +336,8 @@ function endRound(winner = null) {
     location.reload();
     return;
   }
-
+  // 👉 Startspieler wechseln
+  startingPlayer = (startingPlayer + 1) % players.length;
   setTimeout(startRound, 2000);
 }
 
