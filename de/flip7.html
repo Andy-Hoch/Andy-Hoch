@@ -160,252 +160,254 @@
 </div>
 
 <script>
-let players = [];
-let startingPlayer = 0;
-let currentPlayer = startingPlayer;
-let deck = [];
-let gameOver = false;
+  let players = [];
+  let startingPlayer = 0;
+  let currentPlayer = startingPlayer;
+  let deck = [];
+  let gameOver = false;
 
-function getCardColor(value) {
-  const colors = [
-    "#6c757d", // 0
-    "#007bff",
-    "#28a745",
-    "#ffc107",
-    "#dc3545",
-    "#17a2b8",
-    "#6610f2",
-    "#fd7e14",
-    "#20c997",
-    "#e83e8c",
-    "#343a40",
-    "#ff5733",
-    "#6f42c1"
-  ];
-  return colors[value] || "#999";
-}
-
-function renderNameInputs() {
-  const count = parseInt(document.getElementById("playerCount").value);
-  const container = document.getElementById("nameInputs");
-
-  container.innerHTML = "";
-
-  for (let i = 0; i < count; i++) {
-    const input = document.createElement("input");
-    input.type = "text";
-    input.placeholder = `Spieler ${i + 1}`;
-    input.id = `playerName${i}`;
-    input.style.display = "block";
-    input.style.margin = "5px auto";
-    input.style.padding = "8px";
-    input.style.width = "80%";
-
-    container.appendChild(input);
+  function getCardColor(value) {
+    const colors = [
+      "#6c757d", // 0
+      "#007bff",
+      "#28a745",
+      "#ffc107",
+      "#dc3545",
+      "#17a2b8",
+      "#6610f2",
+      "#fd7e14",
+      "#20c997",
+      "#e83e8c",
+      "#343a40",
+      "#ff5733",
+      "#6f42c1"
+    ];
+    return colors[value] || "#999";
   }
-}
 
-function shuffle(deck) {
-  for (let i = deck.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [deck[i], deck[j]] = [deck[j], deck[i]];
-  }
-}
+  function renderNameInputs() {
+    const count = parseInt(document.getElementById("playerCount").value);
+    const container = document.getElementById("nameInputs");
 
-function createDeck() {
-  deck = [];
+    container.innerHTML = "";
 
-  for (let i = 0; i <= 12; i++) {
-    let count = i === 0 ? 1 : i; // 0 nur einmal, sonst = Zahlenwert
+    for (let i = 0; i < count; i++) {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.placeholder = `Spieler ${i + 1}`;
+      input.id = `playerName${i}`;
+      input.style.display = "block";
+      input.style.margin = "5px auto";
+      input.style.padding = "8px";
+      input.style.width = "80%";
 
-    for (let j = 0; j < count; j++) {
-      deck.push(i);
+      container.appendChild(input);
     }
   }
 
-  shuffle(deck)
-}
+  function shuffle(deck) {
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+  }
 
-function startGame() {
-  const count = parseInt(document.getElementById("playerCount").value);
-  players = [];
+  function createDeck() {
+    deck = [];
 
-  for (let i = 0; i < count; i++) {
-    const nameInput = document.getElementById(`playerName${i}`);
-    const name = nameInput.value.trim() || `Spieler ${i + 1}`;
+    for (let i = 0; i <= 12; i++) {
+      let count = i === 0 ? 1 : i; // 0 nur einmal, sonst = Zahlenwert
 
-    players.push({
-      name: name,
-      score: 0,
-      roundCards: [],
-      status: "active"
+      for (let j = 0; j < count; j++) {
+        deck.push(i);
+      }
+    }
+
+    shuffle(deck)
+  }
+
+  function startGame() {
+    const count = parseInt(document.getElementById("playerCount").value);
+    players = [];
+
+    for (let i = 0; i < count; i++) {
+      const nameInput = document.getElementById(`playerName${i}`);
+      const name = nameInput.value.trim() || `Spieler ${i + 1}`;
+
+      players.push({
+        name: name,
+        score: 0,
+        roundCards: [],
+        status: "active"
+      });
+    }
+
+    document.getElementById("setup").style.display = "none";
+    document.getElementById("game").style.display = "block";
+
+    startRound();
+  }
+
+  function startRound() {
+    createDeck();
+    players.forEach(p => {
+      p.roundCards = [];
+      p.status = "active";
+    });
+    currentPlayer = startingPlayer;
+    gameOver = false;
+    updateUI();
+  }
+
+  function drawCard() {
+    if (gameOver) return;
+
+    const player = players[currentPlayer];
+    if (player.status !== "active") return;
+
+    const card = deck.pop();
+    
+
+    if (player.roundCards.includes(card)) {
+    player.roundCards.push(card); // Karte hinzufügen (WICHTIG)
+
+    player.status = "bust";
+
+    updateUI(); // 👉 UI sofort aktualisieren
+
+    setTimeout(() => {
+      alert(`${player.name} bust!`);
+      nextPlayer();
+    }, 100);
+
+    return;
+    }
+
+
+    player.roundCards.push(card);
+
+    if (player.roundCards.length === 7) {
+      alert(`${player.name} hat Flip 7!`);
+      endRound(currentPlayer);
+      return;
+    }
+
+    nextPlayer();
+  }
+
+  function stopTurn() {
+    if (gameOver) return;
+
+    const player = players[currentPlayer];
+    player.status = "stopped";
+    nextPlayer();
+  }
+
+  function nextPlayer() {
+    const activePlayers = players
+      .map((p, i) => ({ ...p, index: i }))
+      .filter(p => p.status === "active");
+
+    // ❗ Runde endet nur wenn keiner mehr aktiv ist
+    if (activePlayers.length === 0) {
+      endRound();
+      return;
+    }
+
+    // 👉 Wenn nur noch ein Spieler aktiv ist
+    if (activePlayers.length === 1) {
+      currentPlayer = activePlayers[0].index; // 🔥 WICHTIG!
+      updateUI();
+      return;
+    }
+
+    // 👉 Nächsten aktiven Spieler finden
+    do {
+      currentPlayer = (currentPlayer + 1) % players.length;
+    } while (players[currentPlayer].status !== "active");
+
+    updateUI();
+  }
+
+  function endRound(winner = null) {
+    gameOver = true;
+
+    players.forEach((p, i) => {
+      if (p.status !== "bust") {
+        let points = p.roundCards.reduce((a, b) => a + b, 0);
+
+        if (winner === i) {
+          points += 15;
+        }
+
+        p.score += points;
+      }
+    });
+
+    if (players.some(p => p.score >= 200)) {
+      const winnerIndex = players.findIndex(p => p.score >= 200);
+      alert(`${players[winnerIndex].name} gewinnt das Spiel mit ${players[winnerIndex].score} Punkten!`);
+      location.reload();
+      return;
+    }
+    // 👉 Startspieler wechseln
+    startingPlayer = (startingPlayer + 1) % players.length;
+    setTimeout(startRound, 2000);
+  }
+
+  function updateUI() {
+    document.getElementById("status").innerText =
+      players[currentPlayer].name + " ist am Zug";
+
+    const container = document.getElementById("players");
+    container.innerHTML = "";
+
+    players.forEach((p, i) => {
+      const div = document.createElement("div");
+      div.classList.add("player");
+
+      if (i === currentPlayer) div.classList.add("active");
+
+      let statusText = "";
+      if (p.status === "bust") statusText = "💥 Bust";
+      if (p.status === "stopped") statusText = "🛑 Gestoppt";
+
+      div.innerHTML = `
+        <h3>${p.name} (Punkte: ${p.score}) ${statusText}</h3>
+        
+        <div class="cards">
+          ${
+            p.roundCards.length === 0
+              ? `<span style="opacity:0.3;">(keine Karten)</span>`
+              : p.roundCards.map((c, index, arr) => {
+                  const isLast = index === arr.length - 1;
+
+                  let angle = Math.random() * 20 - 10
+                  let rotation = "${angle}deg";
+                  let extraStyle = "";
+
+                  if (p.status === "bust" && isLast) {
+                    extraStyle = "border:4px solid red; transform:scale(1.1);";
+                  }
+
+                  if (p.roundCards.length === 7 && isLast) {
+                    extraStyle = "outline:4px solid gold; transform:scale(1.1);";
+                  }
+
+                  return `
+                    <span class="card" style="background:${getCardColor(c)}; ${extraStyle} transform: rotate(${angle}deg);">
+                      ${c}
+                    </span>
+                  `;
+                }).join("")
+          }
+        </div>
+      `;
+
+      container.appendChild(div);
     });
   }
-
-  document.getElementById("setup").style.display = "none";
-  document.getElementById("game").style.display = "block";
-
-  startRound();
-}
-
-function startRound() {
-  createDeck();
-  players.forEach(p => {
-    p.roundCards = [];
-    p.status = "active";
-  });
-  currentPlayer = startingPlayer;
-  gameOver = false;
-  updateUI();
-}
-
-function drawCard() {
-  if (gameOver) return;
-
-  const player = players[currentPlayer];
-  if (player.status !== "active") return;
-
-  const card = deck.pop();
-  
-
-  if (player.roundCards.includes(card)) {
-  player.roundCards.push(card); // Karte hinzufügen (WICHTIG)
-
-  player.status = "bust";
-
-  updateUI(); // 👉 UI sofort aktualisieren
-
-  setTimeout(() => {
-    alert(`${player.name} bust!`);
-    nextPlayer();
-  }, 100);
-
-  return;
-  }
-
-
-  player.roundCards.push(card);
-
-  if (player.roundCards.length === 7) {
-    alert(`${player.name} hat Flip 7!`);
-    endRound(currentPlayer);
-    return;
-  }
-
-  nextPlayer();
-}
-
-function stopTurn() {
-  if (gameOver) return;
-
-  const player = players[currentPlayer];
-  player.status = "stopped";
-  nextPlayer();
-}
-
-function nextPlayer() {
-  const activePlayers = players
-    .map((p, i) => ({ ...p, index: i }))
-    .filter(p => p.status === "active");
-
-  // ❗ Runde endet nur wenn keiner mehr aktiv ist
-  if (activePlayers.length === 0) {
-    endRound();
-    return;
-  }
-
-  // 👉 Wenn nur noch ein Spieler aktiv ist
-  if (activePlayers.length === 1) {
-    currentPlayer = activePlayers[0].index; // 🔥 WICHTIG!
-    updateUI();
-    return;
-  }
-
-  // 👉 Nächsten aktiven Spieler finden
-  do {
-    currentPlayer = (currentPlayer + 1) % players.length;
-  } while (players[currentPlayer].status !== "active");
-
-  updateUI();
-}
-
-function endRound(winner = null) {
-  gameOver = true;
-
-  players.forEach((p, i) => {
-    if (p.status !== "bust") {
-      let points = p.roundCards.reduce((a, b) => a + b, 0);
-
-      if (winner === i) {
-        points += 15;
-      }
-
-      p.score += points;
-    }
-  });
-
-  if (players.some(p => p.score >= 200)) {
-    const winnerIndex = players.findIndex(p => p.score >= 200);
-    alert(`${players[winnerIndex].name} gewinnt das Spiel mit ${players[winnerIndex].score} Punkten!`);
-    location.reload();
-    return;
-  }
-  // 👉 Startspieler wechseln
-  startingPlayer = (startingPlayer + 1) % players.length;
-  setTimeout(startRound, 2000);
-}
-
-function updateUI() {
-  document.getElementById("status").innerText =
-    players[currentPlayer].name + " ist am Zug";
-
-  const container = document.getElementById("players");
-  container.innerHTML = "";
-
-  players.forEach((p, i) => {
-    const div = document.createElement("div");
-    div.classList.add("player");
-
-    if (i === currentPlayer) div.classList.add("active");
-
-    let statusText = "";
-    if (p.status === "bust") statusText = "💥 Bust";
-    if (p.status === "stopped") statusText = "🛑 Gestoppt";
-
-    div.innerHTML = `
-      <h3>${p.name} (Punkte: ${p.score}) ${statusText}</h3>
-      
-      <div class="cards">
-        ${
-          p.roundCards.length === 0
-            ? `<span style="opacity:0.3;">(keine Karten)</span>`
-            : p.roundCards.map((c, index, arr) => {
-                const isLast = index === arr.length - 1;
-
-                let extraStyle = "";
-
-                if (p.status === "bust" && isLast) {
-                  extraStyle = "border:4px solid red; transform:scale(1.1);";
-                }
-
-                if (p.roundCards.length === 7 && isLast) {
-                  extraStyle = "outline:4px solid gold; transform:scale(1.1);";
-                }
-
-                return `
-                  <span class="card" style="background:${getCardColor(c)}; ${extraStyle}">
-                    ${c}
-                  </span>
-                `;
-              }).join("")
-        }
-      </div>
-    `;
-
-    container.appendChild(div);
-  });
-}
-window.onload = renderNameInputs;
+  window.onload = renderNameInputs;
 
 </script>
 
