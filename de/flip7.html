@@ -135,17 +135,15 @@
   }
 </style>
 </head>
-<body>
-
-<h1>Flip 7</h1>
-
+<body>  
 <div id="setup">
+  <h1>Flip 7</h1>
   <label>Spieleranzahl (2–16): </label>
-  <input type="number" id="playerCount" min="2" max="16" value="2" onchange="renderNameInputs()">
+  <input type="range" id="playerCount" min="2" max="16" step="1" value="2" onchange="renderNameInputs()">
 
   <div id="nameInputs"></div>
 
-  <button onclick="startGame()">Spiel starten</button>
+  <button onclick="startGame()" style="width: min(80%, 200px)">Spiel starten</button>
 </div>
 
 <div id="game" style="display:none;">
@@ -197,7 +195,7 @@
       input.style.display = "block";
       input.style.margin = "5px auto";
       input.style.padding = "8px";
-      input.style.width = "80%";
+      input.style.width = "min(80%, 200px)";
 
       container.appendChild(input);
     }
