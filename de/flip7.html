@@ -137,12 +137,12 @@
 </head>
 <body>  
 <div id="setup" style="display: flex; flex-direction: column; justify-content: center; align-content: center; align-items: center;">
-  <div style="text-align: center;">
+  <div style="text-align: center; width: min(100%, 200px);">
     <h1>Flip 7</h1>
     <p>Spieleranzahl (2–16):</p>
-    <input type="range" id="playerCount" min="2" max="16" step="1" value="2" onchange="renderNameInputs()">
+    <input type="range" style="width: 100%;" id="playerCount" min="2" max="16" step="1" value="2" onchange="renderNameInputs()">
   </div>
-  <div id="nameInputs" style="width: min(100%, 200px); "></div>
+  <div id="nameInputs" style="width: min(100%, 200px);"></div>
 
   <button onclick="startGame()" style="width: min(80%, 200px)">Spiel starten</button>
 </div>
