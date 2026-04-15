@@ -133,6 +133,34 @@
       width: 22%;
     }
   }
+  dialog {
+  border: none;
+  border-radius: 12px;
+  padding: 20px;
+  width: 90%;
+  max-width: 400px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 15px 0;
+}
+
+th, td {
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  text-align: center;
+}
+
+th {
+  background: #f0f0f0;
+}
+
+tr:first-child {
+  font-weight: bold;
+  background: #fff3cd;
+}
 </style>
 </head>
 <body>  
@@ -155,6 +183,20 @@
   <button onclick="stopTurn()">Stopp</button>
 </div>
 </div>
+<dialog id="scoreDialog">
+  <h2>🏆 Spiel beendet</h2>
+  <table id="scoreTable">
+    <thead>
+      <tr>
+        <th>Platz</th>
+        <th>Name</th>
+        <th>Punkte</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button onclick="location.reload()">Neues Spiel</button>
+</dialog>
 
 <script>
   let players = [];
@@ -162,6 +204,31 @@
   let currentPlayer = startingPlayer;
   let deck = [];
   let gameOver = false;
+  const medal = ["🥇", "🥈", "🥉"][index] || "";
+  
+  function showFinalScores() {
+  const dialog = document.getElementById("scoreDialog");
+  const tbody = document.querySelector("#scoreTable tbody");
+
+  // Spieler sortieren (höchste Punkte zuerst)
+  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+
+  tbody.innerHTML = "";
+
+  sortedPlayers.forEach((p, index) => {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>${medal} ${index + 1}</td>
+      <td>${p.name}</td>
+      <td>${p.score}</td>
+    `;
+
+    tbody.appendChild(row);
+  });
+
+  dialog.showModal();
+}
 
   function getCardColor(value) {
     const colors = [
@@ -342,11 +409,9 @@
     });
 
     if (players.some(p => p.score >= 200)) {
-      const winnerIndex = players.findIndex(p => p.score >= 200);
-      alert(`${players[winnerIndex].name} gewinnt das Spiel mit ${players[winnerIndex].score} Punkten!`);
-      location.reload();
-      return;
-    }
+  showFinalScores();
+  return;
+}
     // 👉 Startspieler wechseln
     startingPlayer = (startingPlayer + 1) % players.length;
     setTimeout(startRound, 2000);
