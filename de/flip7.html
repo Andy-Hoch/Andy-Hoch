@@ -163,7 +163,7 @@ tr:first-child {
 }
 </style>
 </head>
-<body>  
+<body>
 <div id="setup" style="display: flex; flex-direction: column; justify-content: center; align-content: center; align-items: center;">
   <div style="text-align: center; width: min(100%, 200px);">
     <h1>Flip 7</h1>
@@ -204,9 +204,9 @@ tr:first-child {
   let currentPlayer = startingPlayer;
   let deck = [];
   let gameOver = false;
-  const medal = ["🥇", "🥈", "🥉"][index] || "";
-  
+
   function showFinalScores() {
+  const medal = ["🥇", "🥈", "🥉"] || "";
   const dialog = document.getElementById("scoreDialog");
   const tbody = document.querySelector("#scoreTable tbody");
 
@@ -219,7 +219,7 @@ tr:first-child {
     const row = document.createElement("tr");
 
     row.innerHTML = `
-      <td>${medal} ${index + 1}</td>
+      <td>${medal[index] || ""} ${index + 1}</td>
       <td>${p.name}</td>
       <td>${p.score}</td>
     `;
@@ -330,7 +330,7 @@ tr:first-child {
     if (player.status !== "active") return;
 
     const card = deck.pop();
-    
+
 
     if (player.roundCards.includes(card)) {
     player.roundCards.push(card); // Karte hinzufügen (WICHTIG)
@@ -408,7 +408,7 @@ tr:first-child {
       }
     });
 
-    if (players.some(p => p.score >= 20)) {
+    if (players.some(p => p.score >= 200)) {
   showFinalScores();
   return;
 }
@@ -436,7 +436,7 @@ tr:first-child {
 
       div.innerHTML = `
         <h3>${p.name} (Punkte: ${p.score}) ${statusText}</h3>
-        
+
         <div class="cards">
           ${
             p.roundCards.length === 0
