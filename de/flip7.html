@@ -8,12 +8,14 @@
   * {
     box-sizing: border-box;
   }
-
+  :root {
+    color-scheme: light dark;
+  }
   body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 10px;
-    background: #f4f4f4;
+    background: light-dark(#f4f4f4, #333);
   }
 
   h1 {
@@ -24,6 +26,14 @@
   h2 {
     font-size: 18px;
     margin: 10px 0;
+  }
+  input{
+    display: block;
+    margin: 5px auto;
+    padding: 8px;
+    width: min(100%, 200px);
+    border-radius: 10px;
+    border: 1px solid light-dark(#44444444, #ddd);
   }
 
   /* 📱 Spieler Layout */
@@ -36,7 +46,7 @@
   .player {
     padding: 10px;
     border-radius: 12px;
-    background: white;
+    background: light-dark(white, #555);
   }
 
   .active {
@@ -44,44 +54,44 @@
   }
 
   /* 🃏 Karten */
-.cards {
-  min-height: 90px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  padding-left: 10px;
-}
+  .cards {
+    min-height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 10px;
+  }
 
-.card {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
+  .card {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
 
-  width: 50px;
-  height: 70px;
+    width: 50px;
+    height: 70px;
 
-  border-radius: 10px;
-  border: 2px solid #333;
+    border-radius: 10px;
+    border: 2px solid light-dark(#333, #ccc);
 
-  font-size: 22px;
-  font-weight: bold;
-  color: white;
+    font-size: 22px;
+    font-weight: bold;
+    color: white;
 
-  box-shadow: 1px 2px 5px rgba(0,0,0,0.2);
+    box-shadow: 1px 2px 5px  light-dark(rgba(0,0,0,0.2), rgba(255,255,255,0.2));
 
-  /* 🔥 DAS IST DER TRICK */
-  margin-left: -20px;
-}
+    /* 🔥 DAS IST DER TRICK */
+    margin-left: -20px;
+  }
 
-.card:first-child {
-  margin-left: 0;
-}
+  .card:first-child {
+    margin-left: 0;
+  }
 
   /* 📱 Buttons */
   .controls {
     position: sticky;
     bottom: 0;
-    background: #f4f4f4;
+    background: light-dark(#f4f4f4, #333);
     padding: 10px 0;
     margin-top: 10px;
     display: flex;
@@ -94,8 +104,8 @@
     font-size: 16px;
     border-radius: 10px;
     border: none;
-    background: #333;
-    color: white;
+    background: light-dark(#333, #ccc);
+    color: light-dark(white, #333);
   }
 
   button:active {
@@ -133,34 +143,38 @@
       width: 22%;
     }
   }
+
   dialog {
-  border: none;
-  border-radius: 12px;
-  padding: 20px;
-  width: 90%;
-  max-width: 400px;
-}
+    border: none;
+    border-radius: 12px;
+    padding: 20px;
+    width: 90%;
+    max-width: 400px;
+  }
+  dialog::backdrop {
+      background-color: rgba(0, 0, 0, 0.3);
+  }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 15px 0;
-}
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+  }
 
-th, td {
-  padding: 8px;
-  border-bottom: 1px solid #ddd;
-  text-align: center;
-}
+  th, td {
+    padding: 8px;
+    border-bottom: 1px solid light-dark(#ddd, #555);
+    text-align: center;
+  }
 
-th {
-  background: #f0f0f0;
-}
+  th {
+    background: light-dark(#f0f0f0, #555);
+  }
 
-tr:first-child {
-  font-weight: bold;
-  background: #fff3cd;
-}
+  tr:first-child {
+    font-weight: bold;
+    background: light-dark(#fff3cd, #555);
+  }
 </style>
 </head>
 <body>
@@ -260,10 +274,6 @@ tr:first-child {
       input.type = "text";
       input.placeholder = `Spieler ${i + 1}`;
       input.id = `playerName${i}`;
-      input.style.display = "block";
-      input.style.margin = "5px auto";
-      input.style.padding = "8px";
-      input.style.width = "min(100%, 200px)";
 
       container.appendChild(input);
     }
