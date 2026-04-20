@@ -244,9 +244,12 @@
   dialog.showModal();
 }
 
-  function getCardColor(value) {
+  function getCardColor(card) {
+    if (card.type === "bonus") return "#f39c12"; // orange
+    if (card.type === "multiplier") return "#000"; // schwarz
+
     const colors = [
-      "#6c757d", // 0
+      "#6c757d",
       "#007bff",
       "#28a745",
       "#ffc107",
@@ -260,7 +263,8 @@
       "#ff5733",
       "#6f42c1"
     ];
-    return colors[value] || "#999";
+
+    return colors[card.value] || "#999";
   }
 
   function renderNameInputs() {
@@ -289,15 +293,34 @@
   function createDeck() {
     deck = [];
 
+    // Zahlenkarten
     for (let i = 0; i <= 12; i++) {
-      let count = i === 0 ? 1 : i; // 0 nur einmal, sonst = Zahlenwert
+      let count = i === 0 ? 1 : i;
 
       for (let j = 0; j < count; j++) {
-        deck.push(i);
+        deck.push({
+          type: "number",
+          value: i
+        });
       }
     }
 
-    shuffle(deck)
+    // ➕ Sonderkarten (je 1x)
+    const specials = [2, 4, 6, 8, 10];
+
+    specials.forEach(val => {
+      deck.push({
+        type: "bonus",
+        value: val
+      });
+    });
+
+    deck.push({
+      type: "multiplier",
+      value: 2
+    });
+
+    shuffle(deck);
   }
 
   function startGame() {
@@ -333,6 +356,14 @@
     updateUI();
   }
 
+  function isDuplicateNumberCard(player, card) {
+    if (card.type !== "number") return false;
+
+    return player.roundCards.some(
+      c => c.type === "number" && c.value === card.value
+    );
+}
+
   function drawCard() {
     if (gameOver) return;
 
@@ -342,25 +373,26 @@
     const card = deck.pop();
 
 
-    if (player.roundCards.includes(card)) {
-    player.roundCards.push(card); // Karte hinzufügen (WICHTIG)
+    if (isDuplicateNumberCard(player, card)) {
+      player.roundCards.push(card); // Karte hinzufügen (WICHTIG)
 
-    player.status = "bust";
+      player.status = "bust";
 
-    updateUI(); // 👉 UI sofort aktualisieren
+      updateUI(); // 👉 UI sofort aktualisieren
 
-    setTimeout(() => {
-      alert(`${player.name} bust!`);
-      nextPlayer();
-    }, 100);
+      setTimeout(() => {
+        alert(`${player.name} bust!`);
+        nextPlayer();
+      }, 100);
 
-    return;
+      return;
     }
-
 
     player.roundCards.push(card);
 
-    if (player.roundCards.length === 7) {
+    const numberCards = player.roundCards.filter(c => c.type === "number");
+
+    if (numberCards.length === 7) {
       alert(`${player.name} hat Flip 7!`);
       endRound(currentPlayer);
       return;
@@ -375,6 +407,28 @@
     const player = players[currentPlayer];
     player.status = "stopped";
     nextPlayer();
+  }
+
+  function calculatePoints(cards) {
+    let numberSum = 0;
+    let bonusSum = 0;
+    let multiplier = 1;
+
+    cards.forEach(card => {
+      if (card.type === "number") {
+        numberSum += card.value;
+      }
+
+      if (card.type === "bonus") {
+        bonusSum += card.value;
+      }
+
+      if (card.type === "multiplier") {
+        multiplier *= 2;
+      }
+    });
+
+    return (numberSum * multiplier) + bonusSum;
   }
 
   function nextPlayer() {
@@ -408,7 +462,7 @@
 
     players.forEach((p, i) => {
       if (p.status !== "bust") {
-        let points = p.roundCards.reduce((a, b) => a + b, 0);
+        let points = calculatePoints(p.roundCards);
 
         if (winner === i) {
           points += 15;
@@ -425,6 +479,12 @@
     // 👉 Startspieler wechseln
     startingPlayer = (startingPlayer + 1) % players.length;
     setTimeout(startRound, 2000);
+  }
+
+  function getCardLabel(card) {
+    if (card.type === "number") return card.value;
+    if (card.type === "bonus") return `+${card.value}`;
+    if (card.type === "multiplier") return "x2";
   }
 
   function updateUI() {
@@ -468,7 +528,7 @@
 
                   return `
                     <span class="card" style="background:${getCardColor(c)}; ${extraStyle} transform: rotate(${angle}deg);">
-                      ${c}
+                      ${getCardLabel(c)}
                     </span>
                   `;
                 }).join("")
