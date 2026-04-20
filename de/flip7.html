@@ -339,6 +339,9 @@
       });
     }
 
+    createDeck();
+    console.log("Verbleibende Karten: " + deck.length);
+
     document.getElementById("setup").style.display = "none";
     document.getElementById("game").style.display = "block";
 
@@ -346,7 +349,6 @@
   }
 
   function startRound() {
-    createDeck();
     players.forEach(p => {
       p.roundCards = [];
       p.status = "active";
@@ -366,6 +368,11 @@
 
   function drawCard() {
     if (gameOver) return;
+    if (deck.length === 0) {
+      alert("Deck ist leer! Neues Deck wird gemischt.");
+      console.log("Deck ist leer! Neues Deck wird gemischt.");
+      createDeck();
+    }
 
     const player = players[currentPlayer];
     if (player.status !== "active") return;
@@ -382,9 +389,10 @@
 
       setTimeout(() => {
         alert(`${player.name} bust!`);
+        console.log(`${player.name} bust!`);
         nextPlayer();
       }, 100);
-
+      console.log("Verbleibende Karten: " + deck.length);
       return;
     }
 
@@ -394,11 +402,14 @@
 
     if (numberCards.length === 7) {
       alert(`${player.name} hat Flip 7!`);
+      console.log(`${player.name} hat Flip 7!`);
+      console.log("Verbleibende Karten: " + deck.length);
       endRound(currentPlayer);
       return;
     }
 
     nextPlayer();
+    console.log("Verbleibende Karten: " + deck.length);
   }
 
   function stopTurn() {
