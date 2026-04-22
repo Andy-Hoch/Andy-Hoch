@@ -297,11 +297,11 @@ let players = [];
       if (i === currentPlayer) div.classList.add("active");
 
       let statusText = "";
-      if (p.status === "bust") statusText = "💥 Bust";
-      if (p.status === "stopped") statusText = "🛑 Gestoppt";
+      if (p.status === "bust") statusText = "💥";
+      if (p.status === "stopped") statusText = "🛑";
 
       div.innerHTML = `
-        <h3>${p.name}<br>(Punkte: ${p.score}) ${statusText}</h3>
+        <div><h3>${p.name} ${statusText}</h3><h3>Punkte: ${p.score}</h3></div>
 
         <div class="cards">
           ${
