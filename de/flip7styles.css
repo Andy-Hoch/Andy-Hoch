@@ -44,7 +44,7 @@
     padding: 10px;
     border-radius: 12px;
     background: light-dark(white, #555);
-    min-height: 160px;
+    min-height: 185px;
   }
 
   .active {
