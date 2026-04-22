@@ -52,6 +52,19 @@
     display: flex;
     justify-content: space-between;
   }
+  
+  .playerdetails > h3:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .playerdetails > h3:last-child {
+    border-bottom: 1px solid black;
+    border-left: 1px solid black;
+    padding: 10px;
+    border-bottom-left-radius: 12px;
+    transform: translate(10px, -10px);
+  }
 
   .active {
     outline: 3px solid #4caf50;
