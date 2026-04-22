@@ -47,6 +47,11 @@
     background: light-dark(white, #555);
     min-height: 185px;
   }
+  
+  .playerdetails {
+    display: flex;
+    justify-content: space-between;
+  }
 
   .active {
     outline: 3px solid #4caf50;
