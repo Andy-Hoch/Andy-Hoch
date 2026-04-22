@@ -35,11 +35,16 @@
     flex-direction: column;
     gap: 10px;
   }
+  
+  h3 {
+    margin-top: 0;
+  }
 
   .player {
     padding: 10px;
     border-radius: 12px;
     background: light-dark(white, #555);
+    min-height: 160px;
   }
 
   .active {
