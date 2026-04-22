@@ -301,7 +301,7 @@ let players = [];
       if (p.status === "stopped") statusText = "🛑";
 
       div.innerHTML = `
-        <div><h3>${p.name} ${statusText}</h3><h3>Punkte: ${p.score}</h3></div>
+        <div class="playerdetails"><h3>${p.name} ${statusText}</h3><h3>Punkte: ${p.score}</h3></div>
 
         <div class="cards">
           ${
