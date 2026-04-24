@@ -3,6 +3,6 @@
     "short_name": "Flip7",
     "start_url": "./flip7.html",
     "background-color": "#ffffff",
-    "theme-color": "#000000";
+    "theme-color": "#000000",
     "display": "fullscreen"
 }
