@@ -184,6 +184,15 @@
     margin: 15px 0;
   }
 
+  #gameDialog button {
+    margin: 15px 0 0;
+  }
+
+  #gameDialog p {
+    text-align: center;
+    font-size: 2em;
+  }
+
   th, td {
     padding: 8px;
     border-bottom: 1px solid light-dark(#ddd, #555);

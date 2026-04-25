@@ -154,7 +154,7 @@ function getCardColor(card) {
   function drawCard() {
     if (gameOver) return;
     if (deck.length === 0) {
-      alert("Deck ist leer! Neues Deck wird gemischt.");
+      showDialog("Keine Karten mehr im Deck – Neues Deck wird gemischt.");
       console.log("Deck ist leer! Neues Deck wird gemischt.");
       createDeck();
     }
@@ -173,7 +173,7 @@ function getCardColor(card) {
       updateUI(); // 👉 UI sofort aktualisieren
 
       setTimeout(() => {
-        alert(`${player.name} bust!`);
+        showDialog(`💥 ${player.name} bust!`);
         console.log(`${player.name} bust!`);
         nextPlayer();
       }, 100);
@@ -186,7 +186,7 @@ function getCardColor(card) {
     const numberCards = player.roundCards.filter(c => c.type === "number");
 
     if (numberCards.length === 7) {
-      alert(`${player.name} hat Flip 7!`);
+      showDialog(`🎉 ${player.name} hat Flip 7!`);
       console.log(`${player.name} hat Flip 7!`);
       console.log("Verbleibende Karten: " + deck.length);
       endRound(currentPlayer);
@@ -334,5 +334,16 @@ function getCardColor(card) {
 
       container.appendChild(div);
     });
+  }
+function showDialog(message) {
+  const dialog = document.getElementById("gameDialog");
+  const text = document.getElementById("dialogMessage");
+  text.innerText = message;
+  dialog.showModal();
+}
+
+  function closeDialog() {
+    const dialog = document.getElementById("gameDialog");
+    dialog.close();
   }
   window.onload = renderNameInputs;
