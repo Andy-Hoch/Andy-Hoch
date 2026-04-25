@@ -1,10 +1,10 @@
 let players = [];
-  let startingPlayer = 0;
-  let currentPlayer = startingPlayer;
-  let deck = [];
-  let gameOver = false;
+let startingPlayer = 0;
+let currentPlayer = startingPlayer;
+let deck = [];
+let gameOver = false;
 
-  function showFinalScores() {
+function showFinalScores() {
   const medal = ["🥇", "🥈", "🥉"] || "";
   const dialog = document.getElementById("scoreDialog");
   const tbody = document.querySelector("#scoreTable tbody");
@@ -29,28 +29,28 @@ let players = [];
   dialog.showModal();
 }
 
-  function getCardColor(card) {
-    if (card.type === "bonus") return "#f39c12"; // orange
-    if (card.type === "multiplier") return "#000"; // schwarz
+function getCardColor(card) {
+  if (card.type === "bonus") return "oklch(0.7832 0.1953 69.37)"; // orange
+  if (card.type === "multiplier") return "oklch(0 0 0)"; // schwarz
 
-    const colors = [
-      "#6c757d",
-      "#007bff",
-      "#28a745",
-      "#ffc107",
-      "#dc3545",
-      "#17a2b8",
-      "#6610f2",
-      "#fd7e14",
-      "#20c997",
-      "#e83e8c",
-      "#343a40",
-      "#ff5733",
-      "#6f42c1"
-    ];
+  const colors = [
+    "oklch(0.5575 0.0165 244.89)",
+    "oklch(0.6048 0.2323 257.2136)",
+    "oklch(0.6401 0.2516 146.74)",
+    "oklch(0.8442 0.1991 84.9338)",
+    "oklch(0.5915 0.2682 21.24)",
+    "oklch(0.6552 0.1405 212.17)",
+    "oklch(0.5294 0.294 286.98)",
+    "oklch(0.7265 0.2084 51.48)",
+    "oklch(0.7441 0.2022 166.36)",
+    "oklch(0.6364 0.2868 357.36)",
+    "oklch(0.3451 0.0133 248.21)",
+    "oklch(0.6804 0.252 33.69)",
+    "oklch(0.5015 0.1883 294.99)"
+  ];
 
-    return colors[card.value] || "#999";
-  }
+  return colors[card.value] || "oklch(0.683 0 0)";
+}
 
   function renderNameInputs() {
     const count = parseInt(document.getElementById("playerCount").value);

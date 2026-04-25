@@ -3,12 +3,19 @@
   }
   :root {
     color-scheme: light dark;
+    --bg-white: oklch(0.9672 0 0);
+    --bg-black: oklch(0.3211 0 0);
+    --boder-black: oklch(0.3867 0 0 / 26.67%);
+    --border-white: oklch(0.8975 0 0);
+    --white: oklch(1 0 0);
+    --bg-player: oklch(0.4495 0 0);
+    --active: oklch(0.6731 0.2605 144.21);
   }
   body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 10px;
-    background: light-dark(#f4f4f4, #333);
+    background: light-dark(var(--bg-white), var(--bg-black));
   }
 
   h1 {
@@ -26,7 +33,7 @@
     padding: 8px;
     width: min(100%, 200px);
     border-radius: 10px;
-    border: 1px solid light-dark(#44444444, #ddd);
+    border: 1px solid light-dark(var(--border-black), var(--border-white));
   }
 
   /* 📱 Spieler Layout */
@@ -35,7 +42,7 @@
     flex-direction: column;
     gap: 10px;
   }
-  
+
   h3 {
     margin-top: 0;
     white-space: nowrap;
@@ -44,20 +51,20 @@
   .player {
     padding: 10px;
     border-radius: 12px;
-    background: light-dark(white, #555);
+    background: light-dark(var(--white), var(--bg-player));
     min-height: 185px;
   }
-  
+
   .playerdetails {
     display: flex;
     justify-content: space-between;
   }
-  
+
   .playerdetails > h3:first-child {
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  
+
   .playerdetails > h3:last-child {
     border-bottom: 1px solid black;
     border-left: 1px solid black;
@@ -67,7 +74,7 @@
   }
 
   .active {
-    outline: 3px solid #4caf50;
+    outline: 3px solid var(--active);
   }
 
   /* 🃏 Karten */
@@ -88,7 +95,7 @@
     height: 70px;
 
     border-radius: 10px;
-    border: 2px solid light-dark(#333, #ccc);
+    border: 2px solid light-dark(var(--bg-white), var(--bg-black));
 
     font-size: 22px;
     font-weight: bold;
@@ -108,7 +115,6 @@
   .controls {
     position: sticky;
     bottom: 0;
-    background: light-dark(#f4f4f4, #333);
     padding: 10px 0;
     margin-top: 10px;
     display: flex;
@@ -121,7 +127,7 @@
     font-size: 16px;
     border-radius: 10px;
     border: none;
-    background: light-dark(#333, #ccc);
+    background: light-dark(var(--bg-black), var(--bg-white));
     color: light-dark(white, #333);
   }
 
@@ -140,11 +146,11 @@
     #players {
       flex-direction: row;
       flex-wrap: wrap;
-      justify-content: center;
+      justify-content: space-around;
     }
 
     .player {
-      width: 45%;
+      min-width: 49%;
     }
   }
 
