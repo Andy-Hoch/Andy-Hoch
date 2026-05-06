@@ -208,6 +208,10 @@ function getCardColor(card) {
     console.log("Verbleibende Karten: " + deck.length);
   }
 
+  function hasSecondChance(player) {
+    return player.roundCards.some(c => c.type === "secondChance");
+  }
+  
   function stopTurn() {
     if (gameOver) return;
 
