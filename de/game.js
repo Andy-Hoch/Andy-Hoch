@@ -163,50 +163,80 @@ function getCardColor(card) {
 }
 
   function drawCard() {
-    if (gameOver) return;
-    if (deck.length === 0) {
-      showDialog("Keine Karten mehr im Deck – Neues Deck wird gemischt.");
-      console.log("Deck ist leer! Neues Deck wird gemischt.");
-      createDeck();
-    }
+  if (gameOver) return;
 
-    const player = players[currentPlayer];
-    if (player.status !== "active") return;
-
-    const card = deck.pop();
-
-
-    if (isDuplicateNumberCard(player, card)) {
-      player.roundCards.push(card); // Karte hinzufügen (WICHTIG)
-
-      player.status = "bust";
-
-      updateUI(); // 👉 UI sofort aktualisieren
-
-      setTimeout(() => {
-        showDialog(`💥 ${player.name} bust!`);
-        console.log(`${player.name} bust!`);
-        nextPlayer();
-      }, 100);
-      console.log("Verbleibende Karten: " + deck.length);
-      return;
-    }
-
-    player.roundCards.push(card);
-
-    const numberCards = player.roundCards.filter(c => c.type === "number");
-
-    if (numberCards.length === 7) {
-      showDialog(`🎉 ${player.name} hat Flip 7!`);
-      console.log(`${player.name} hat Flip 7!`);
-      console.log("Verbleibende Karten: " + deck.length);
-      endRound(currentPlayer);
-      return;
-    }
-
-    nextPlayer();
-    console.log("Verbleibende Karten: " + deck.length);
+  // 👉 Deck leer → neu mischen
+  if (deck.length === 0) {
+    showDialog("Keine Karten mehr im Deck – Neues Deck wird gemischt.");
+    console.log("Deck ist leer! Neues Deck wird gemischt.");
+    createDeck();
   }
+
+  const player = players[currentPlayer];
+  if (player.status !== "active") return;
+
+  const card = deck.pop();
+
+  // 👉 Prüfe Bust (nur für Zahlenkarten relevant)
+  if (isDuplicateNumberCard(player, card)) {
+
+    // 👉 SECOND CHANCE CHECK
+    const secondChanceIndex = player.roundCards.findIndex(
+      c => c.type === "secondChance"
+    );
+
+    if (secondChanceIndex !== -1) {
+      // 🛡️ Second Chance wird verbraucht
+
+      // entferne die Second Chance Karte
+      player.roundCards.splice(secondChanceIndex, 1);
+
+      showDialog(`🛡️ ${player.name} nutzt Second Chance!`, () => {
+        updateUI();
+        nextPlayer();
+      });
+
+      console.log(`${player.name} nutzt Second Chance`);
+      console.log("Verbleibende Karten: " + deck.length);
+      return;
+    }
+
+    // ❌ NORMALER BUST
+    player.roundCards.push(card); // Karte anzeigen!
+
+    player.status = "bust";
+
+    updateUI();
+
+    showDialog(`💥 ${player.name} bust!`, () => {
+      nextPlayer();
+    });
+
+    console.log(`${player.name} bust!`);
+    console.log("Verbleibende Karten: " + deck.length);
+    return;
+  }
+
+  // ✅ Normale Karte hinzufügen
+  player.roundCards.push(card);
+
+  // 👉 Flip 7 (nur Zahlenkarten zählen)
+  const numberCards = player.roundCards.filter(c => c.type === "number");
+
+  if (numberCards.length === 7) {
+    showDialog(`🎉 ${player.name} hat Flip 7!`, () => {
+      endRound(currentPlayer);
+    });
+
+    console.log(`${player.name} hat Flip 7!`);
+    console.log("Verbleibende Karten: " + deck.length);
+    return;
+  }
+
+  // 👉 normal weiter
+  nextPlayer();
+  console.log("Verbleibende Karten: " + deck.length);
+}
 
   function hasSecondChance(player) {
     return player.roundCards.some(c => c.type === "secondChance");
