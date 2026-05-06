@@ -178,44 +178,43 @@ function getCardColor(card) {
   const card = deck.pop();
 
   // 👉 Prüfe Bust (nur für Zahlenkarten relevant)
-  if (isDuplicateNumberCard(player, card)) {
+  const isDuplicate = isDuplicateNumberCard(player, card);
 
-    // 👉 SECOND CHANCE CHECK
-    const secondChanceIndex = player.roundCards.findIndex(
-      c => c.type === "secondChance"
-    );
+if (isDuplicate) {
 
-    if (secondChanceIndex !== -1) {
-      // 🛡️ Second Chance wird verbraucht
+  const secondChanceIndex = player.roundCards.findIndex(
+    c => c.type === "secondChance"
+  );
 
-      // entferne die Second Chance Karte
-      player.roundCards.splice(secondChanceIndex, 1);
+  // 🛡️ Second Chance greift
+  if (secondChanceIndex !== -1) {
+    player.roundCards.splice(secondChanceIndex, 1);
 
-      showDialog(`🛡️ ${player.name} nutzt Second Chance!`, () => {
-        updateUI();
-        nextPlayer();
-      });
-
-      console.log(`${player.name} nutzt Second Chance`);
-      console.log("Verbleibende Karten: " + deck.length);
-      return;
-    }
-
-    // ❌ NORMALER BUST
-    player.roundCards.push(card); // Karte anzeigen!
-
-    player.status = "bust";
-
-    updateUI();
-
-    showDialog(`💥 ${player.name} bust!`, () => {
+    showDialog(`🛡️ ${player.name} nutzt Second Chance!`, () => {
+      updateUI();
       nextPlayer();
     });
 
-    console.log(`${player.name} bust!`);
+    console.log(`${player.name} nutzt Second Chance`);
     console.log("Verbleibende Karten: " + deck.length);
     return;
   }
+
+  // 💥 echter Bust
+  player.roundCards.push(card);
+
+  player.status = "bust";
+
+  updateUI();
+
+  showDialog(`💥 ${player.name} bust!`, () => {
+    nextPlayer();
+  });
+
+  console.log(`${player.name} bust!`);
+  console.log("Verbleibende Karten: " + deck.length);
+  return;
+}
 
   // ✅ Normale Karte hinzufügen
   player.roundCards.push(card);
