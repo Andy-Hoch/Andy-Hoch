@@ -32,6 +32,7 @@ function showFinalScores() {
 function getCardColor(card) {
   if (card.type === "bonus") return "oklch(0.7832 0.1953 69.37)"; // orange
   if (card.type === "multiplier") return "oklch(0 0 0)"; // schwarz
+  if (card.type === "secondChance") return "oklch(0.8144 0.126462 210.8169)"; // cyan
 
   const colors = [
     "oklch(0.5575 0.0165 244.89)",
@@ -103,6 +104,16 @@ function getCardColor(card) {
     deck.push({
       type: "multiplier",
       value: 2
+    });
+    
+    deck.push({
+      type: "secondChance"
+    });
+    deck.push({
+      type: "secondChance"
+    });
+    deck.push({
+      type: "secondChance"
     });
 
     shuffle(deck);
@@ -281,6 +292,7 @@ function getCardColor(card) {
     if (card.type === "number") return card.value;
     if (card.type === "bonus") return `+${card.value}`;
     if (card.type === "multiplier") return "x2";
+    if (card.type === "secondChance") return "2nd";
   }
 
   function updateUI() {
