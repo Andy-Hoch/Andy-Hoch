@@ -180,27 +180,35 @@ function getCardColor(card) {
   // 👉 Prüfe Bust (nur für Zahlenkarten relevant)
   const isDuplicate = isDuplicateNumberCard(player, card);
 
+const isDuplicate = isDuplicateNumberCard(player, card);
+
 if (isDuplicate) {
 
+  // 👉 Hat der Spieler eine Second Chance?
   const secondChanceIndex = player.roundCards.findIndex(
     c => c.type === "secondChance"
   );
 
-  // 🛡️ Second Chance greift
+  // 🛡️ SECOND CHANCE
   if (secondChanceIndex !== -1) {
+
+    // Second Chance entfernen
     player.roundCards.splice(secondChanceIndex, 1);
 
+    // ❗ WICHTIG:
+    // die doppelte Karte wird NICHT hinzugefügt
+
+    updateUI();
+
     showDialog(`🛡️ ${player.name} nutzt Second Chance!`, () => {
-      updateUI();
       nextPlayer();
     });
 
     console.log(`${player.name} nutzt Second Chance`);
-    console.log("Verbleibende Karten: " + deck.length);
-    return;
+    return; // 🔥 GANZ WICHTIG
   }
 
-  // 💥 echter Bust
+  // 💥 NORMALER BUST
   player.roundCards.push(card);
 
   player.status = "bust";
@@ -212,7 +220,6 @@ if (isDuplicate) {
   });
 
   console.log(`${player.name} bust!`);
-  console.log("Verbleibende Karten: " + deck.length);
   return;
 }
 
