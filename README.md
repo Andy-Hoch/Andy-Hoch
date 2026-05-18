@@ -10,10 +10,10 @@ Hey, I'm Andy. I build web applications and data-driven digital infrastructures,
 
 🚀 **Project Highlights**:
 - **Sport Buddy**: A full-stack web app connecting sports enthusiasts — built with real-time chat (WebSocket), API integrations, and a clean UX. [Repo →](https://github.com/Andy-Hoch/Sport-Buddy)
-- **citychurch News**: A native iOS & Android app for internal communication, designed in Figma and shipped via Bravo Studio. [iOS](https://citychurch.koeln/news-ios) | [Android](https://citychurch.koeln/news-android)
+- **citychurch News**: A native iOS & Android app for internal communication, designed in Figma and shipped via Bravo Studio. *Deprecated since November 2024*
 
 💼 **Background**:
-Technical Solutions Consultant at [Credera Germany](https://www.credera.com/de-de) · Online Marketing Manager at [Adcologne GmbH](https://www.adcologne.de/) · Digital Lead at [citychurch Köln](https://citychurch.koeln) — leading digital infrastructure, video streaming, and web development.
+Technical Solutions Consultant at [Credera Germany](https://www.credera.com/de-de) · Online Marketing Manager at [Adcologne GmbH](https://www.adcologne.de/) · Digital Lead at [citychurch Köln](https://citychurch.koeln) — leading teams for digital infrastructure, video streaming, and web development.
 
 🧰 **Technical Skills**:
 <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" alt="JavaScript" width="30" height="30"/>
