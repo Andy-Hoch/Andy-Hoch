@@ -1,5 +1,5 @@
 # Andreas Hoch
-## Full-Stack Developer & Tag Management Expert - bridging technical depth with digital strategy.**
+## Full-Stack Developer & Tag Management Expert - bridging technical depth with digital strategy.
 
 Hey, I'm Andy. I build web applications and data-driven digital infrastructures, with a strong focus on tag management, analytics engineering, and full-stack development. I combine hands-on engineering skills with years of experience in digital marketing and technical consulting.
 
