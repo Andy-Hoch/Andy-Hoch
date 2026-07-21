@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quixx Scorecard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f7f7f7;
+      color: #222;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    .sheet {
+      display: grid;
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .row {
+      background: var(--row-color);
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    .numbers {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+      gap: 6px;
+    }
+    .numbers input {
+      width: 100%;
+      padding: 8px 6px;
+      border: 1px solid #bbb;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 0.95rem;
+      background: #fafafa;
+    }
+    .numbers input.marked {
+      background: #d7f1d7;
+      border-color: #6fbf6f;
+      font-weight: 700;
+    }
+    .numbers label {
+      display: block;
+      font-size: 0.75rem;
+      margin-bottom: 4px;
+      text-align: center;
+      color: #444;
+    }
+    .totals {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .total-box {
+      flex: 1 1 140px;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: #f5f5f5;
+      text-align: center;
+    }
+    .total-box strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #333;
+    }
+    .total-box span {
+      font-size: 1.4rem;
+      color: #111;
+    }
+    .instructions {
+      margin-bottom: 14px;
+      color: #555;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <header>
+      <h1>Quixx Score Checker</h1>
+    </header>
+
+    <section class="row" data-color="red" style="--row-color: #ff4d4d;">
+      <div class="numbers" id="row-red"></div>
+      <div class="totals">
+        <div class="total-box">
+          <strong>Marked</strong>
+          <span id="red-count">0</span>
+        </div>
+        <div class="total-box">
+          <strong>Score</strong>
+          <span id="red-score">0</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="row" data-color="yellow" style="--row-color: #ffd633;">
+      <div class="numbers" id="row-yellow"></div>
+      <div class="totals">
+        <div class="total-box">
+          <strong>Marked</strong>
+          <span id="yellow-count">0</span>
+        </div>
+        <div class="total-box">
+          <strong>Score</strong>
+          <span id="yellow-score">0</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="row" data-color="green" style="--row-color: #4dff4d;">
+
+      <div class="numbers" id="row-green"></div>
+      <div class="totals">
+        <div class="total-box">
+          <strong>Marked</strong>
+          <span id="green-count">0</span>
+        </div>
+        <div class="total-box">
+          <strong>Score</strong>
+          <span id="green-score">0</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="row" data-color="blue" style="--row-color: #4d79ff;">
+      <div class="numbers" id="row-blue"></div>
+      <div class="totals">
+        <div class="total-box">
+          <strong>Marked</strong>
+          <span id="blue-count">0</span>
+        </div>
+        <div class="total-box">
+          <strong>Score</strong>
+          <span id="blue-score">0</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="row">
+      <div class="total-box">
+        <strong>Overall Total</strong>
+        <span id="overall-total">0</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const rows = {
+      red: { numbers: [2,3,4,5,6,7,8,9,10,11,12, "close"], direction: 'asc' },
+      yellow: { numbers: [2,3,4,5,6,7,8,9,10,11,12, "close"], direction: 'asc' },
+      green: { numbers: [12,11,10,9,8,7,6,5,4,3,2, "close"], direction: 'desc' },
+      blue: { numbers: [12,11,10,9,8,7,6,5,4,3,2, "close"], direction: 'desc' }
+    };
+
+    function createRow(color) {
+      const container = document.getElementById('row-' + color);
+      rows[color].numbers.forEach(num => {
+        const wrapper = document.createElement('label');
+        wrapper.innerHTML = `<span>${num}</span><input type="checkbox" data-color="${color}" onchange="updateTotals()" />`;
+        container.appendChild(wrapper);
+      });
+    }
+
+    function updateTotals() {
+      let overall = 0;
+      const points = [0, 1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 66, 78]; // Cumulative points for marked numbers
+      Object.keys(rows).forEach(color => {
+        const inputs = Array.from(document.querySelectorAll(`#row-${color} input[type=checkbox]`));
+        const marked = inputs.filter(i => i.checked);
+        const count = marked.length;
+        const score = points[count] || 0;
+        document.getElementById(`${color}-count`).textContent = count;
+        document.getElementById(`${color}-score`).textContent = score;
+        overall += score;
+      });
+      document.getElementById('overall-total').textContent = overall;
+    }
+
+    function clearRow(color) {
+      document.querySelectorAll(`#row-${color} input[type=checkbox]`).forEach(input => input.checked = false);
+      updateTotals();
+    }
+
+    Object.keys(rows).forEach(createRow);
+    updateTotals();
+  </script>
+</body>
+</html>
