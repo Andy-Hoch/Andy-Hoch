@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quixx Scorecard</title>
+  <title>Scorecard</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,6 +11,10 @@
       padding: 20px;
       background: #f7f7f7;
       color: #222;
+      --yellow: oklch(0.847 0.1528 91.23);
+      --green: oklch(0.6039 0.1361 146.67);
+      --blue: oklch(0.6039 0.1361 258.42);
+      --red: oklch(0.6039 0.1361 33.03);
     }
     h1 {
       margin-bottom: 10px;
@@ -23,10 +27,8 @@
     }
     .row {
       background: var(--row-color);
-      border: 1px solid #ccc;
       border-radius: 8px;
       padding: 16px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     }
     .numbers {
       display: grid;
@@ -41,6 +43,7 @@
       text-align: center;
       font-size: 0.95rem;
       background: #fafafa;
+      display: none;
     }
     .numbers input.marked {
       background: #d7f1d7;
@@ -49,108 +52,65 @@
     }
     .numbers label {
       display: block;
-      font-size: 0.75rem;
+      font-size: 1rem;
       margin-bottom: 4px;
       text-align: center;
       color: #444;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 1rem 0;
+      cursor: pointer;
+      &:has(input[type=checkbox]:checked) {
+        background: rgba(255, 255, 255, 0.6);
+      }
     }
     .totals {
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
       margin-top: 12px;
     }
     .total-box {
-      flex: 1 1 140px;
-      padding: 10px 12px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      background: #f5f5f5;
       text-align: center;
     }
     .total-box strong {
-      display: block;
       margin-bottom: 6px;
       color: #333;
     }
     .total-box span {
-      font-size: 1.4rem;
       color: #111;
-    }
-    .instructions {
-      margin-bottom: 14px;
-      color: #555;
-      line-height: 1.5;
+      background: var(--row-color);
+      padding: 1rem 2rem;
+      border-radius: 8px;
     }
   </style>
 </head>
 <body>
   <div class="sheet">
     <header>
-      <h1>Quixx Score Checker</h1>
+      <h1>Scorecard</h1>
     </header>
 
-    <section class="row" data-color="red" style="--row-color: #ff4d4d;">
+    <section class="row" data-color="red" style="--row-color: var(--red);">
       <div class="numbers" id="row-red"></div>
-      <div class="totals">
-        <div class="total-box">
-          <strong>Marked</strong>
-          <span id="red-count">0</span>
-        </div>
-        <div class="total-box">
-          <strong>Score</strong>
-          <span id="red-score">0</span>
-        </div>
-      </div>
     </section>
 
-    <section class="row" data-color="yellow" style="--row-color: #ffd633;">
+    <section class="row" data-color="yellow" style="--row-color: var(--yellow);">
       <div class="numbers" id="row-yellow"></div>
-      <div class="totals">
-        <div class="total-box">
-          <strong>Marked</strong>
-          <span id="yellow-count">0</span>
-        </div>
-        <div class="total-box">
-          <strong>Score</strong>
-          <span id="yellow-score">0</span>
-        </div>
-      </div>
     </section>
 
-    <section class="row" data-color="green" style="--row-color: #4dff4d;">
-
+    <section class="row" data-color="green" style="--row-color: var(--green);">
       <div class="numbers" id="row-green"></div>
-      <div class="totals">
-        <div class="total-box">
-          <strong>Marked</strong>
-          <span id="green-count">0</span>
-        </div>
-        <div class="total-box">
-          <strong>Score</strong>
-          <span id="green-score">0</span>
-        </div>
-      </div>
     </section>
 
-    <section class="row" data-color="blue" style="--row-color: #4d79ff;">
+    <section class="row" data-color="blue" style="--row-color: var(--blue);">
       <div class="numbers" id="row-blue"></div>
-      <div class="totals">
-        <div class="total-box">
-          <strong>Marked</strong>
-          <span id="blue-count">0</span>
-        </div>
-        <div class="total-box">
-          <strong>Score</strong>
-          <span id="blue-score">0</span>
-        </div>
-      </div>
     </section>
 
     <div class="row">
       <div class="total-box">
-        <strong>Overall Total</strong>
-        <span id="overall-total">0</span>
+        <span id="red-score" style="--row-color: var(--red)">0</span> +
+        <span id="yellow-score" style="--row-color: var(--yellow)">0</span> +
+        <span id="green-score" style="--row-color: var(--green)">0</span> +
+        <span id="blue-score" style="--row-color: var(--blue)">0</span> =
+        <strong><span id="overall-total">0</span> Punkte</strong>
       </div>
     </div>
   </div>
@@ -180,7 +140,6 @@
         const marked = inputs.filter(i => i.checked);
         const count = marked.length;
         const score = points[count] || 0;
-        document.getElementById(`${color}-count`).textContent = count;
         document.getElementById(`${color}-score`).textContent = score;
         overall += score;
       });
