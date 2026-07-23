@@ -15,6 +15,7 @@
       --green: oklch(0.6039 0.1361 146.67);
       --blue: oklch(0.6039 0.1361 258.42);
       --red: oklch(0.6039 0.1361 33.03);
+      --grey: oklch(84.522% 0.0001 271.152);
     }
     h1 {
       margin-bottom: 10px;
@@ -32,7 +33,7 @@
     }
     .numbers {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(3.6em, 1fr));
       gap: 6px;
     }
     .numbers input {
@@ -53,7 +54,6 @@
     .numbers label {
       display: block;
       font-size: 1rem;
-      margin-bottom: 4px;
       text-align: center;
       color: #444;
       background: rgba(255, 255, 255, 0.1);
@@ -64,6 +64,14 @@
         background: rgba(255, 255, 255, 0.6);
       }
     }
+
+    #minus label {
+      color: transparent;
+      &:has(input[type=checkbox]:checked) {
+        color: #444;
+      }
+    }
+
     .totals {
       margin-top: 12px;
     }
@@ -89,19 +97,36 @@
     </header>
 
     <section class="row" data-color="red" style="--row-color: var(--red);">
-      <div class="numbers" id="row-red"></div>
+      <div class="numbers" id="row-red">
+        <label>2<input type="checkbox" data-color="red" onchange="updateTotals()"></label>
+        <label><span>3</span><input type="checkbox" data-color="red" onchange="updateTotals()"></label>
+        <label><span>4</span><input type="checkbox" data-color="red" onchange="updateTotals()"></label>
+        <label><span>5</span><input type="checkbox" data-color="red" onchange="updateTotals()"></label>
+        <label><span>6</span><input type="checkbox" data-color="red" onchange="updateTotals()"></label>
+        <label><span>7</span><input type="checkbox" data-color="red" onchange="updateTotals()"></label>
+        <label><span>8</span><input type="checkbox" data-color="red" onchange="updateTotals()"></label>
+        <label><span>9</span><input type="checkbox" data-color="red" onchange="updateTotals()"></label>
+        <label><span>10</span><input type="checkbox" data-color="red" onchange="updateTotals()"></label>
+        <label><span>11</span><input type="checkbox" data-color="red" onchange="updateTotals()"></label>
+        <label><span>12</span><input type="checkbox" data-color="red" onchange="updateTotals()"></label>
+        <label><span>BONUS</span><input type="checkbox" data-color="red" onchange="updateTotals()"></label>
+      </div>
     </section>
 
     <section class="row" data-color="yellow" style="--row-color: var(--yellow);">
-      <div class="numbers" id="row-yellow"></div>
+      <div class="numbers" id="row-yellow"><label><span>2</span><input type="checkbox" data-color="yellow" onchange="updateTotals()"></label><label><span>3</span><input type="checkbox" data-color="yellow" onchange="updateTotals()"></label><label><span>4</span><input type="checkbox" data-color="yellow" onchange="updateTotals()"></label><label><span>5</span><input type="checkbox" data-color="yellow" onchange="updateTotals()"></label><label><span>6</span><input type="checkbox" data-color="yellow" onchange="updateTotals()"></label><label><span>7</span><input type="checkbox" data-color="yellow" onchange="updateTotals()"></label><label><span>8</span><input type="checkbox" data-color="yellow" onchange="updateTotals()"></label><label><span>9</span><input type="checkbox" data-color="yellow" onchange="updateTotals()"></label><label><span>10</span><input type="checkbox" data-color="yellow" onchange="updateTotals()"></label><label><span>11</span><input type="checkbox" data-color="yellow" onchange="updateTotals()"></label><label><span>12</span><input type="checkbox" data-color="yellow" onchange="updateTotals()"></label><label><span>BONUS</span><input type="checkbox" data-color="yellow" onchange="updateTotals()"></label></div>
     </section>
 
     <section class="row" data-color="green" style="--row-color: var(--green);">
-      <div class="numbers" id="row-green"></div>
+      <div class="numbers" id="row-green"><label><span>12</span><input type="checkbox" data-color="green" onchange="updateTotals()"></label><label><span>11</span><input type="checkbox" data-color="green" onchange="updateTotals()"></label><label><span>10</span><input type="checkbox" data-color="green" onchange="updateTotals()"></label><label><span>9</span><input type="checkbox" data-color="green" onchange="updateTotals()"></label><label><span>8</span><input type="checkbox" data-color="green" onchange="updateTotals()"></label><label><span>7</span><input type="checkbox" data-color="green" onchange="updateTotals()"></label><label><span>6</span><input type="checkbox" data-color="green" onchange="updateTotals()"></label><label><span>5</span><input type="checkbox" data-color="green" onchange="updateTotals()"></label><label><span>4</span><input type="checkbox" data-color="green" onchange="updateTotals()"></label><label><span>3</span><input type="checkbox" data-color="green" onchange="updateTotals()"></label><label><span>2</span><input type="checkbox" data-color="green" onchange="updateTotals()"></label><label><span>BONUS</span><input type="checkbox" data-color="green" onchange="updateTotals()"></label></div>
     </section>
 
     <section class="row" data-color="blue" style="--row-color: var(--blue);">
-      <div class="numbers" id="row-blue"></div>
+      <div class="numbers" id="row-blue"><label><span>12</span><input type="checkbox" data-color="blue" onchange="updateTotals()"></label><label><span>11</span><input type="checkbox" data-color="blue" onchange="updateTotals()"></label><label><span>10</span><input type="checkbox" data-color="blue" onchange="updateTotals()"></label><label><span>9</span><input type="checkbox" data-color="blue" onchange="updateTotals()"></label><label><span>8</span><input type="checkbox" data-color="blue" onchange="updateTotals()"></label><label><span>7</span><input type="checkbox" data-color="blue" onchange="updateTotals()"></label><label><span>6</span><input type="checkbox" data-color="blue" onchange="updateTotals()"></label><label><span>5</span><input type="checkbox" data-color="blue" onchange="updateTotals()"></label><label><span>4</span><input type="checkbox" data-color="blue" onchange="updateTotals()"></label><label><span>3</span><input type="checkbox" data-color="blue" onchange="updateTotals()"></label><label><span>2</span><input type="checkbox" data-color="blue" onchange="updateTotals()"></label><label><span>BONUS</span><input type="checkbox" data-color="blue" onchange="updateTotals()"></label></div>
+    </section>
+
+    <section class="row" style="--row-color: var(--grey);" id="minus">
+      <div class="numbers" id="row-grey"><label><span>x</span><input type="checkbox" data-color="grey" onchange="updateTotals()"></label><label><span>x</span><input type="checkbox" data-color="grey" onchange="updateTotals()"></label><label><span>x</span><input type="checkbox" data-color="grey" onchange="updateTotals()"></label><label><span>x</span><input type="checkbox" data-color="grey" onchange="updateTotals()"></label></div>
     </section>
 
     <div class="row">
@@ -109,40 +134,35 @@
         <span id="red-score" style="--row-color: var(--red)">0</span> +
         <span id="yellow-score" style="--row-color: var(--yellow)">0</span> +
         <span id="green-score" style="--row-color: var(--green)">0</span> +
-        <span id="blue-score" style="--row-color: var(--blue)">0</span> =
-        <strong><span id="overall-total">0</span> Punkte</strong>
+        <span id="blue-score" style="--row-color: var(--blue)">0</span> -
+        <span id="grey-score" style="--row-color: var(--grey)">0</span> =
+        <strong><span id="overall-total" style="padding:0;">0</span> Punkte</strong>
       </div>
     </div>
   </div>
 
   <script>
     const rows = {
-      red: { numbers: [2,3,4,5,6,7,8,9,10,11,12, "BONUS"], direction: 'asc' },
-      yellow: { numbers: [2,3,4,5,6,7,8,9,10,11,12, "BONUS"], direction: 'asc' },
-      green: { numbers: [12,11,10,9,8,7,6,5,4,3,2, "BONUS"], direction: 'desc' },
-      blue: { numbers: [12,11,10,9,8,7,6,5,4,3,2, "BONUS"], direction: 'desc' }
+      red: { numbers: [2,3,4,5,6,7,8,9,10,11,12, "BONUS"]},
+      yellow: { numbers: [2,3,4,5,6,7,8,9,10,11,12, "BONUS"]},
+      green: { numbers: [12,11,10,9,8,7,6,5,4,3,2, "BONUS"]},
+      blue: { numbers: [12,11,10,9,8,7,6,5,4,3,2, "BONUS"]},
     };
-
-    function createRow(color) {
-      const container = document.getElementById('row-' + color);
-      rows[color].numbers.forEach(num => {
-        const wrapper = document.createElement('label');
-        wrapper.innerHTML = `<span>${num}</span><input type="checkbox" data-color="${color}" onchange="updateTotals()" />`;
-        container.appendChild(wrapper);
-      });
-    }
 
     function updateTotals() {
       let overall = 0;
       const points = [0, 1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 66, 78]; // Cumulative points for marked numbers
       Object.keys(rows).forEach(color => {
-        const inputs = Array.from(document.querySelectorAll(`#row-${color} input[type=checkbox]`));
-        const marked = inputs.filter(i => i.checked);
-        const count = marked.length;
+        const count = Array.from(document.querySelectorAll(`#row-${color} input[type=checkbox]`)).filter(i => i.checked).length;
         const score = points[count] || 0;
         document.getElementById(`${color}-score`).textContent = score;
         overall += score;
       });
+
+      let minusPoints = Array.from(document.querySelectorAll(`#row-grey input[type=checkbox]`)).filter(i => i.checked).length * 5;
+      document.getElementById(`grey-score`).textContent = minusPoints;
+      overall -= minusPoints;
+
       document.getElementById('overall-total').textContent = overall;
     }
 
@@ -151,7 +171,6 @@
       updateTotals();
     }
 
-    Object.keys(rows).forEach(createRow);
     updateTotals();
   </script>
 </body>
