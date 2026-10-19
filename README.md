@@ -12,20 +12,8 @@ Hey, I'm Andy. I build web applications and data-driven digital infrastructures,
 - **Sport Buddy**: A full-stack web app connecting sports enthusiasts — built with real-time chat (WebSocket), API integrations, and a clean UX. [Repo →](https://github.com/Andy-Hoch/Sport-Buddy)
 - **citychurch News**: A native iOS & Android app for internal communication, designed in Figma and shipped via Bravo Studio. *Deprecated since November 2024*
 
-💼 **Background**:
-Technical Solutions Consultant at [Credera Germany](https://www.credera.com/de-de) · Online Marketing Manager at [Adcologne GmbH](https://www.adcologne.de/) · Digital Lead at [citychurch Köln](https://citychurch.koeln) — leading teams for digital infrastructure, video streaming, and web development.
-
-🧰 **Technical Skills**:
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" alt="JavaScript" width="30" height="30"/>
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original-wordmark.svg" alt="HTML5" width="30" height="30"/>
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original-wordmark.svg" alt="CSS3" width="30" height="30"/>
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/rails/rails-original-wordmark.svg" alt="Ruby on Rails" width="30" height="30"/>
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/ruby/ruby-original.svg" alt="Ruby" width="30" height="30"/>
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/bootstrap/bootstrap-plain-wordmark.svg" alt="Bootstrap" width="30" height="30"/>
-<img src="https://www.vectorlogo.zone/logos/figma/figma-icon.svg" alt="Figma" width="30" height="30"/>
-
 📚 **Education**:
-Web Development Bootcamp, Le Wagon (2023) · B.A. Media Management, Rheinische Fachhochschule Köln (2014–2017)
+B.A. Media Management, Rheinische Fachhochschule Köln (2014–2017)
 
 📫 **Let's connect**:
 [LinkedIn](https://www.linkedin.com/in/andreas-hoch/) · [hello@andy-hoch.me](mailto:gleitet.foyers_0u@icloud.com)
