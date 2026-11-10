@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wohnung 2. OG – 3D</title>
+<style>
+  :root { --ink:#1d2026; --muted:#6b7280; --line:#e3e5e8; --accent:#1f6feb; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#eceff2; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; color:var(--ink); }
+  canvas { display:block; }
+  #labels { position:absolute; inset:0; pointer-events:none; }
+  .label { text-align:center; line-height:1.15; padding:4px 8px; border-radius:7px; background:rgba(255,255,255,.82); box-shadow:0 1px 4px rgba(0,0,0,.12); backdrop-filter: blur(3px); white-space:nowrap; }
+  .label b { display:block; font-size:13px; font-weight:650; }
+  .label span { display:block; font-size:11px; color:var(--muted); }
+  #panel { position:absolute; top:16px; left:16px; width:236px; padding:14px 14px 12px; border-radius:12px; background:rgba(255,255,255,.92); box-shadow:0 4px 20px rgba(0,0,0,.12); backdrop-filter: blur(6px); font-size:13px; z-index:5; }
+  #panel h1 { font-size:15px; margin:0 0 2px; }
+  #panel .sub { color:var(--muted); font-size:12px; margin-bottom:12px; }
+  .gl { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:10px 0 6px; }
+  .seg { display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .seg button { flex:1; border:0; border-right:1px solid var(--line); background:#fff; padding:7px 0; font:inherit; font-size:12px; cursor:pointer; }
+  .seg button:last-child { border-right:0; }
+  .seg button.active { background:var(--ink); color:#fff; }
+  .btn { width:100%; border:1px solid var(--line); background:#fff; border-radius:8px; padding:8px; font:inherit; cursor:pointer; margin-bottom:6px; }
+  .btn:hover, .seg button:not(.active):hover { background:#f4f5f7; }
+  .btn.primary { background:#f7f3ea; border-color:#e4dccb; }
+  .tog { display:flex; align-items:center; gap:8px; padding:4px 0; cursor:pointer; }
+  #help { position:absolute; left:16px; bottom:16px; max-width:calc(100% - 32px); padding:8px 12px; border-radius:9px; background:rgba(255,255,255,.85); font-size:12px; color:var(--muted); z-index:5; }
+  #walkOverlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(20,22,26,.35); z-index:4; cursor:pointer; }
+  #walkOverlay > div { background:#fff; padding:18px 24px; border-radius:12px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,.2); max-width:320px; }
+  #walkOverlay b { font-size:16px; }
+  #walkOverlay p { margin:8px 0 0; font-size:13px; color:var(--muted); }
+  #crosshair { position:absolute; left:50%; top:50%; width:6px; height:6px; margin:-3px 0 0 -3px; border-radius:50%; background:rgba(255,255,255,.9); box-shadow:0 0 0 1px rgba(0,0,0,.35); display:none; z-index:4; pointer-events:none; }
+  #crosshair.hot { width:12px; height:12px; margin:-6px 0 0 -6px; background:#ffd75e; }
+  @media (max-width: 600px) { #panel { width:auto; right:16px; } }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="panel">
+  <h1>Wohnung · 2. OG</h1>
+  <div class="sub">Strombergstr. 14 · Raumhöhe 2,70 m</div>
+  <div class="gl">Ansicht</div>
+  <div class="seg" id="modes">
+    <button data-mode="orbit" class="active">3D</button>
+    <button data-mode="top">Draufsicht</button>
+    <button data-mode="walk">Rundgang</button>
+  </div>
+  <div class="gl">Einstellungen</div>
+  <button class="btn primary" id="btnCurtain">Vorhang öffnen</button>
+  <label class="tog"><input type="checkbox" id="chkLabels" checked> Raumnamen</label>
+  <label class="tog"><input type="checkbox" id="chkCeil"> Decke</label>
+  <div style="height:8px"></div>
+  <button class="btn" id="btnReset">Ansicht zurücksetzen</button>
+</div>
+<div id="help"></div>
+<div id="crosshair"></div>
+<div id="walkOverlay"><div>
+  <b>Rundgang</b>
+  <p>Klicken zum Starten</p>
+  <p>W A S D / Pfeiltasten = gehen · Maus = umsehen<br>Klick oder E auf Tür = öffnen/schließen<br>Shift = schneller · Esc = Pause</p>
+</div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+// ---------------------------------------------------------------------------
+// Koordinaten: Plan-X = Ost (m ab linker Außenkante), Plan-Y = Süd (m ab oberer
+// Außenkante). three: x = X - OX, z = Y - OZ, y = Höhe. Norden = -z.
+// ---------------------------------------------------------------------------
+const H = 2.70, OX = 7.6, OZ = 5.0;
+const wx = X => X - OX, wz = Y => Y - OZ;
+
+// --- Renderer / Szene -------------------------------------------------------
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+document.body.appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(innerWidth, innerHeight);
+labelRenderer.domElement.id = 'labels';
+document.body.appendChild(labelRenderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xeceff2);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.05, 200);
+const HOME = { pos: new THREE.Vector3(3, 13.5, 13), target: new THREE.Vector3(0, 0, 0.3) };
+camera.position.copy(HOME.pos);
+
+const orbit = new OrbitControls(camera, renderer.domElement);
+orbit.target.copy(HOME.target);
+orbit.enableDamping = true;
+orbit.minDistance = 1.5;
+orbit.maxDistance = 45;
+orbit.maxPolarAngle = THREE.MathUtils.degToRad(88);
+orbit.update();
+
+// --- Licht -------------------------------------------------------------------
+scene.add(new THREE.HemisphereLight(0xffffff, 0xcfc6b8, 1.5));
+const sun = new THREE.DirectionalLight(0xfff3e2, 2.0);
+sun.position.set(7, 16, 10);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -13, right: 13, top: 13, bottom: -13, near: 1, far: 50 });
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.02;
+scene.add(sun);
+
+// --- Texturen ----------------------------------------------------------------
+function canvasTexture(w, h, draw) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
+let seed = 7;
+const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+// Eichenparkett: 8 Dielenreihen pro Kachel (Kachel = 1,44 m)
+const woodTex = canvasTexture(1024, 1024, (g, w, h) => {
+  const rows = 8, rh = h / rows;
+  for (let r = 0; r < rows; r++) {
+    let x = -rand() * w * 0.5;
+    while (x < w) {
+      const len = w * (0.3 + rand() * 0.45);
+      const l = 66 + rand() * 9;
+      for (const off of [0, -w, w]) {
+        g.fillStyle = `hsl(${30 + rand() * 6}, ${36 + rand() * 10}%, ${l}%)`;
+        g.fillRect(x + off, r * rh, len, rh);
+        g.strokeStyle = 'rgba(110,70,35,.10)';
+        g.lineWidth = 1;
+        for (let k = 0; k < 6; k++) {
+          const yy = r * rh + 6 + rand() * (rh - 12);
+          g.beginPath(); g.moveTo(x + off, yy);
+          g.bezierCurveTo(x + off + len * .3, yy + (rand() - .5) * 8, x + off + len * .7, yy + (rand() - .5) * 8, x + off + len, yy);
+          g.stroke();
+        }
+        g.fillStyle = 'rgba(90,60,30,.35)';
+        g.fillRect(x + off + len - 1.5, r * rh, 1.5, rh);
+      }
+      x += len;
+    }
+    g.fillStyle = 'rgba(90,60,30,.35)';
+    g.fillRect(0, r * rh, w, 1.5);
+  }
+});
+// Dunkle Granitfliesen 60 × 60 cm (Kachel = 1,2 m)
+const tileTex = canvasTexture(1024, 1024, (g, w, h) => {
+  const n = 2, s = w / n;
+  g.fillStyle = '#3b3c3e'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    const x0 = i * s + 2, y0 = j * s + 2, ss = s - 4;
+    g.fillStyle = `hsl(220, 4%, ${21 + rand() * 4}%)`;
+    g.fillRect(x0, y0, ss, ss);
+    for (let k = 0; k < 9000; k++) {
+      const r = rand();
+      g.fillStyle = r < 0.45 ? `rgba(0,0,0,${0.3 + rand() * 0.4})`
+                  : r < 0.85 ? `rgba(105,106,112,${0.2 + rand() * 0.35})`
+                  : `rgba(215,215,222,${0.25 + rand() * 0.5})`;
+      const sz = 1 + rand() * 3;
+      g.fillRect(x0 + rand() * (ss - sz), y0 + rand() * (ss - sz), sz, sz);
+    }
+  }
+});
+// Steinplatten (Kachel = 1,2 m)
+const stoneTex = canvasTexture(512, 512, (g, w, h) => {
+  const n = 2, s = w / n;
+  g.fillStyle = '#8f8a82'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    g.fillStyle = `hsl(35, 8%, ${62 + rand() * 6}%)`;
+    g.fillRect(i * s + 2, j * s + 2, s - 4, s - 4);
+    for (let k = 0; k < 400; k++) {
+      g.fillStyle = `rgba(${rand() > .5 ? '255,255,255' : '60,55,50'},.06)`;
+      g.fillRect(i * s + rand() * s, j * s + rand() * s, 3, 3);
+    }
+  }
+});
+function texFor(base, w, d, tile) {
+  const t = base.clone();
+  t.repeat.set(w / tile, d / tile);
+  t.needsUpdate = true;
+  return t;
+}
+
+// --- Materialien ---------------------------------------------------------------
+const M = {
+  wall:   new THREE.MeshStandardMaterial({ color: 0xf4f2ed, roughness: 0.92 }),
+  cut:    new THREE.MeshStandardMaterial({ color: 0x2a2b2e, roughness: 0.8 }),
+  frame:  new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 }),
+  sill:   new THREE.MeshStandardMaterial({ color: 0xe9e6df, roughness: 0.6 }),
+  door:   new THREE.MeshStandardMaterial({ color: 0xfbfbf9, roughness: 0.55 }),
+  glass:  new THREE.MeshPhysicalMaterial({ color: 0xcfe6f2, roughness: 0.05, transparent: true, opacity: 0.22, depthWrite: false }),
+  frosted:new THREE.MeshStandardMaterial({ color: 0xf7f9f9, roughness: 1, transparent: true, opacity: 0.92, emissive: 0x3a3a38 }),
+  wood:   new THREE.MeshStandardMaterial({ color: 0xa8743f, roughness: 0.7 }),
+  metal:  new THREE.MeshStandardMaterial({ color: 0x4d5054, roughness: 0.4, metalness: 0.6 }),
+  slab:   new THREE.MeshStandardMaterial({ color: 0xb9b6b0, roughness: 0.9 }),
+  stair:  new THREE.MeshStandardMaterial({ color: 0xd8ccb6, roughness: 0.7 }),
+  ceil:   new THREE.MeshStandardMaterial({ color: 0xfafaf8, roughness: 0.95, side: THREE.DoubleSide }),
+  curtain:new THREE.MeshStandardMaterial({ color: 0xf6f1e7, roughness: 0.95, side: THREE.DoubleSide, emissive: 0x1c1a16 }),
+  rail:   new THREE.MeshStandardMaterial({ color: 0xc9ccd0, roughness: 0.35, metalness: 0.7 }),
+};
+// Box-Materialreihenfolge: +x, -x, +y (Oberseite = Schnittfläche dunkel), -y, +z, -z
+const wallMats = [M.wall, M.wall, M.cut, M.wall, M.wall, M.wall];
+const woodMats = [M.wood, M.wood, M.cut, M.wood, M.wood, M.wood];
+
+// --- Bau-Helfer ------------------------------------------------------------------
+const solids = [];            // Kollisionsboxen für den Rundgang
+const ceiling = new THREE.Group();
+scene.add(ceiling);
+
+function boxAt(cx, cz, lx, lz, h0, h1, mat, angle = 0, { solid = true, shadow = true, parent = scene } = {}) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(lx, h1 - h0, lz), mat);
+  m.position.set(cx, (h0 + h1) / 2, cz);
+  m.rotation.y = angle;
+  m.castShadow = shadow;
+  m.receiveShadow = true;
+  parent.add(m);
+  if (solid && h0 < 1.0) solids.push({ cx, cz, hx: lx / 2, hz: lz / 2, a: angle });
+  return m;
+}
+const aabb = (x0, x1, y0, y1, h0, h1, mat, opts) =>
+  boxAt(wx((x0 + x1) / 2), wz((y0 + y1) / 2), x1 - x0, y1 - y0, h0, h1, mat, 0, opts);
+
+// Wand von a nach b (Plan-Koordinaten, Mittellinie), Dicke t, Öffnungen entlang der Wand (s0..s1 in m ab a)
+function wall(a, b, t, ops = []) {
+  const ax = wx(a[0]), az = wz(a[1]), bx = wx(b[0]), bz = wz(b[1]);
+  const dx = bx - ax, dz = bz - az, L = Math.hypot(dx, dz);
+  const ux = dx / L, uz = dz / L, ang = Math.atan2(-dz, dx);
+  const at = s => [ax + ux * s, az + uz * s];
+  const seg = (s0, s1, h0, h1) => {
+    if (s1 - s0 < 0.005 || h1 - h0 < 0.005) return;
+    const [cx, cz] = at((s0 + s1) / 2);
+    boxAt(cx, cz, s1 - s0, t, h0, h1, wallMats, ang);
+  };
+  ops = ops.map(o => o.full ? { ...o, s0: 0, s1: L } : o).sort((p, q) => p.s0 - q.s0);
+  let cur = 0;
+  for (const o of ops) {
+    const sill = o.sill ?? 0, head = o.head ?? 2.05;
+    seg(cur, o.s0, 0, H);
+    seg(o.s0, o.s1, 0, sill);
+    seg(o.s0, o.s1, head, H);
+    if (o.kind === 'door') doorFrame(at, ang, o.s0, o.s1, head, t);
+    else windowParts(at, ang, o.s0, o.s1, sill, head, t, o.kind, o.noSill);
+    cur = o.s1;
+  }
+  seg(cur, L, 0, H);
+}
+function windowParts(at, ang, s0, s1, sill, head, t, kind, noSill = false) {
+  const len = s1 - s0, [cx, cz] = at((s0 + s1) / 2), f = 0.06, fd = Math.min(0.08, t);
+  const eps = sill > 0.1 && !noSill ? 0.008 : 0;   // Fensterbank minimal über der Brüstung (kein Z-Fighting)
+  const nos = { solid: false };
+  boxAt(cx, cz, len, 0.02, sill, head, kind === 'frosted' ? M.frosted : M.glass, ang, { solid: true, shadow: false });
+  const [lx, lz] = at(s0 + f / 2), [rx, rz] = at(s1 - f / 2);
+  boxAt(lx, lz, f, fd, sill, head, M.frame, ang, nos);
+  boxAt(rx, rz, f, fd, sill, head, M.frame, ang, nos);
+  boxAt(cx, cz, len, fd, head - f, head, M.frame, ang, nos);
+  boxAt(cx, cz, len, fd, sill + eps, sill + eps + f, M.frame, ang, nos);
+  if (len > 1.1) boxAt(cx, cz, f * 0.8, fd, sill, head, M.frame, ang, nos);
+  if (eps) boxAt(cx, cz, len + 0.06, t + 0.06, sill - 0.03, sill + eps, M.sill, ang, nos);
+}
+function doorFrame(at, ang, s0, s1, head, t) {
+  const fw = 0.04, [cx, cz] = at((s0 + s1) / 2);
+  const [lx, lz] = at(s0 + fw / 2), [rx, rz] = at(s1 - fw / 2);
+  const nos = { solid: false };
+  boxAt(lx, lz, fw, t + 0.02, 0, head, M.frame, ang, nos);
+  boxAt(rx, rz, fw, t + 0.02, 0, head, M.frame, ang, nos);
+  boxAt(cx, cz, s1 - s0, t + 0.02, head - fw, head, M.frame, ang, nos);
+}
+// horizontale / vertikale Wand: Band y0..y1 bzw. x0..x1, Öffnungen in absoluten Plan-Koordinaten
+const hWall = (y0, y1, x0, x1, ops = []) =>
+  wall([x0, (y0 + y1) / 2], [x1, (y0 + y1) / 2], y1 - y0, ops.map(o => ({ ...o, s0: o.from - x0, s1: o.to - x0 })));
+const vWall = (x0, x1, y0, y1, ops = []) =>
+  wall([(x0 + x1) / 2, y0], [(x0 + x1) / 2, y1], x1 - x0, ops.map(o => ({ ...o, s0: o.from - y0, s1: o.to - y0 })));
+const Win  = (a, b, sill = 0.9, head = 2.30) => ({ from: a, to: b, sill, head, kind: 'window' });
+const Door = (a, b, head = 2.05) => ({ from: a, to: b, sill: 0, head, kind: 'door' });
+
+// Drehtür: Scharnier, Spitze im geschlossenen Zustand, Richtung im geöffneten Zustand (Plan-Koordinaten)
+const doors = [], doorPick = [];
+function door(hinge, closedTip, openTip, { glass = false, open = true } = {}) {
+  const hx = wx(hinge[0]), hz = wz(hinge[1]);
+  const cdx = wx(closedTip[0]) - hx, cdz = wz(closedTip[1]) - hz;
+  const L = Math.hypot(cdx, cdz) - 0.02;
+  const a0 = Math.atan2(-cdz, cdx);
+  const a1 = Math.atan2(-(wz(openTip[1]) - hz), wx(openTip[0]) - hx);
+  let delta = a1 - a0;
+  while (delta > Math.PI) delta -= 2 * Math.PI;
+  while (delta < -Math.PI) delta += 2 * Math.PI;
+  const pivot = new THREE.Group();
+  pivot.position.set(hx, 0, hz);
+  scene.add(pivot);
+  const d = { pivot, a0, delta, L, hx, hz, t: open ? 1 : 0, target: open ? 1 : 0 };
+  const part = (lx, ly, lz, px, py, mat, shadow = true) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(lx, ly, lz), mat);
+    m.position.set(px, py, 0);
+    m.castShadow = shadow;
+    m.receiveShadow = true;
+    m.userData.door = d;
+    pivot.add(m);
+    doorPick.push(m);
+  };
+  const top = 2.02, bot = 0.01, mid = (top + bot) / 2;
+  if (glass) {
+    const f = 0.08, b = 0.14;
+    part(f, top - bot, 0.045, f / 2, mid, M.door);
+    part(f, top - bot, 0.045, L - f / 2, mid, M.door);
+    part(L - 2 * f, f, 0.045, L / 2, top - f / 2, M.door);
+    part(L - 2 * f, b, 0.045, L / 2, bot + b / 2, M.door);
+    part(L - 2 * f, top - f - bot - b, 0.02, L / 2, (bot + b + top - f) / 2, M.frosted, false);
+  } else {
+    part(L, top - bot, 0.04, L / 2, mid, M.door);
+  }
+  part(0.12, 0.03, 0.12, L - 0.08, 1.05, M.metal, false);   // Türgriff beidseitig
+  pivot.rotation.y = a0 + delta * d.t;
+  doors.push(d);
+  solids.push({ door: d });
+}
+const toggleDoor = d => { d.target = d.target ? 0 : 1; };
+function doorBox(d) {
+  const a = d.pivot.rotation.y;
+  return { cx: d.hx + Math.cos(a) * d.L / 2, cz: d.hz - Math.sin(a) * d.L / 2, hx: d.L / 2, hz: 0.03, a };
+}
+function floor(x0, x1, y0, y1, tex, tile, y = 0, roughness = 0.75) {
+  const w = x1 - x0, d = y1 - y0;
+  const mat = new THREE.MeshStandardMaterial({ map: texFor(tex, w, d, tile), roughness });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat);
+  m.rotation.x = -Math.PI / 2;
+  m.position.set(wx((x0 + x1) / 2), y, wz((y0 + y1) / 2));
+  m.receiveShadow = true;
+  scene.add(m);
+}
+
+// --- Umgebung & Böden -------------------------------------------------------------
+{
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), new THREE.MeshStandardMaterial({ color: 0xe3e5e1, roughness: 1 }));
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -0.26;
+  ground.receiveShadow = true;
+  scene.add(ground);
+}
+aabb(0, 15.20, 0, 9.97, -0.25, -0.004, M.slab, { solid: false });   // Geschossdecke
+floor(0.20, 14.94, 0.40, 9.57, woodTex, 1.44, 0);                   // Parkett
+floor(2.91, 5.27, 6.29, 9.57, tileTex, 1.2, 0.002, 0.35);           // Bad (Granit)
+floor(5.45, 6.35, 7.63, 9.57, tileTex, 1.2, 0.002, 0.35);           // WC (Granit)
+floor(6.49, 8.72, 6.25, 9.57, stoneTex, 1.2, 0.002);                // Treppenhaus
+
+// --- Außenwände -----------------------------------------------------------------
+hWall(0, 0.40, 0, 15.20, [Win(1.36, 2.90), Win(5.11, 6.64), Win(8.86, 10.39), Win(12.52, 14.07)]);
+hWall(9.57, 9.97, 0, 15.20, [
+  Win(1.19, 2.12),            // Gäste/Büro
+  Door(3.07, 5.14, 2.10),     // Bad → Veranda
+  Win(5.66, 6.07, 1.30, 2.10),// WC
+  Win(6.83, 8.45),            // Treppenhaus
+  { ...Win(9.17, 9.51), noSill: true }, // kleines Fenster Küche (innen zugemauert)
+  Door(10.87, 12.12, 2.10),   // Balkontür
+  Win(13.05, 14.00),          // Essen
+]);
+// Kleines Küchenfenster: innen geschlossen (Wand), nur außen als Fenster sichtbar
+aabb(9.17, 9.51, 9.57, 9.72, 0.9, 2.30, wallMats);
+aabb(9.14, 9.54, 9.80, 10.02, 0.87, 0.908, M.sill, { solid: false });   // äußere Fensterbank
+vWall(0, 0.20, 0.40, 9.57);
+vWall(14.94, 15.20, 0.40, 9.57);
+
+// --- Innenwände -----------------------------------------------------------------
+vWall(3.77, 3.94, 0.40, 4.57);                                         // Kinder | Eltern
+vWall(7.52, 7.68, 0.40, 4.57);                                         // Eltern | Spielen
+hWall(4.57, 4.77, 3.77, 11.40, [Door(5.11, 5.87), Door(8.96, 9.72)]);   // Flurwand Nord
+aabb(6.97, 8.27, 4.77, 4.91, 0, H, wallMats);                          // Wandverstärkung über TRH
+hWall(5.00, 5.16, 0.20, 2.85);                                         // Kinder | Gäste
+wall([2.85, 5.08], [3.77, 4.72], 0.16, [{ full: true, sill: 0, head: 2.05, kind: 'door' }]); // Kindertür (diagonal)
+vWall(2.74, 2.91, 5.16, 9.57, [Door(5.19, 5.98)]);                     // Gäste | Flur/Bad
+hWall(6.13, 6.29, 2.91, 5.45, [Door(3.77, 4.53)]);                     // Bad Nord
+vWall(5.27, 5.45, 6.29, 9.57);                                         // Bad | WC
+hWall(7.46, 7.63, 5.45, 6.35, [Door(5.66, 6.31)]);                     // WC Nord
+vWall(6.35, 6.49, 6.25, 9.57);                                         // TRH West
+vWall(8.72, 8.87, 6.25, 9.57);                                         // TRH Ost
+aabb(7.48, 7.70, 5.72, 5.92, 0, H, wallMats);                          // TRH Mittelpfosten
+wall([6.42, 6.25], [7.48, 5.84], 0.12, [{ full: true, sill: 0, head: 2.05, kind: 'frosted' }]);    // Milchglasfenster bodentief
+wall([7.70, 5.84], [8.795, 6.25], 0.12, [{ full: true, sill: 0, head: 2.05, kind: 'door' }]);      // Tür Treppenhaus
+hWall(6.18, 6.35, 8.87, 10.98);                                        // Küche Nord (Rest)
+aabb(11.69, 12.45, 6.16, 6.95, 0, H, wallMats);                        // Kamin / Schacht
+
+// Linie Spielen | Wohnen (hellgraue Teile abgerissen)
+aabb(11.22, 11.40, 0.40, 0.62, 0, H, wallMats);
+aabb(11.22, 11.40, 0.62, 1.51, 0, 0.90, wallMats);                     // Brüstungswand (Fensterbankhöhe)
+// Tragende Holzstützen
+aabb(11.22, 11.40, 1.51, 1.71, 0, H, woodMats);
+aabb(11.22, 11.40, 2.68, 2.87, 0, H, woodMats);
+// Kamin (rechteckig, weiß)
+aabb(10.58, 11.40, 4.06, 4.57, 0, H, wallMats);
+
+// Türen (per Klick auf/zu)          Scharnier       geschlossen      offen Richtung
+door([5.13, 4.67],  [5.87, 4.67],  [5.13, 3.90]);   // Eltern (öffnet ins Zimmer)
+door([8.98, 4.67],  [9.72, 4.67],  [8.98, 3.90]);   // Spielen
+door([3.71, 4.75],  [2.89, 5.07],  [3.32, 4.03]);   // Kinder
+door([2.825, 5.21], [2.825, 5.98], [2.00, 5.21]);   // Gäste/Büro
+door([3.79, 6.21],  [4.53, 6.21],  [3.79, 7.00]);   // Bad (öffnet ins Bad)
+door([6.29, 7.545], [5.66, 7.545], [6.29, 6.90]);   // WC (öffnet in den Flur)
+door([7.72, 5.86],  [8.795, 6.25], [8.24, 4.97], { glass: true }); // Treppenhaus: Milchglastür
+
+// --- Veranda (verglast) ------------------------------------------------------------
+aabb(2.74, 5.28, 9.97, 10.69, -0.25, -0.004, M.slab, { solid: false });
+floor(2.80, 5.14, 9.57, 10.59, stoneTex, 1.2, 0.002);
+vWall(2.74, 2.84, 9.97, 10.59, [{ from: 9.97, to: 10.59, sill: 0.9, head: 2.40, kind: 'window' }]);
+hWall(10.59, 10.69, 2.74, 5.28, [Win(2.84, 4.29, 0.9, 2.40)]);
+vWall(5.14, 5.28, 9.97, 10.59);
+aabb(2.70, 5.32, 9.95, 10.73, H, H + 0.14, M.ceil, { solid: false, parent: ceiling });
+
+// --- Balkon --------------------------------------------------------------------
+aabb(9.83, 12.40, 9.97, 10.69, -0.25, -0.004, M.slab, { solid: false });
+floor(9.93, 12.40, 9.57, 10.69, stoneTex, 1.2, 0.002);
+aabb(9.83, 9.93, 9.97, 10.69, 0, 1.0, wallMats);
+aabb(9.93, 10.71, 10.59, 10.69, 0, 1.0, wallMats);
+function railing(x0, x1, y0, y1) {
+  const horiz = (x1 - x0) > (y1 - y0), len = horiz ? x1 - x0 : y1 - y0;
+  aabb(x0, x1, y0, y1, 0.97, 1.02, M.metal, { solid: false });
+  aabb(x0, x1, y0, y1, 0.08, 0.11, M.metal, { solid: false });
+  const n = Math.floor(len / 0.12);
+  for (let i = 0; i <= n; i++) {
+    const p = (horiz ? x0 : y0) + i * len / n;
+    if (horiz) aabb(p - 0.01, p + 0.01, y0 + 0.005, y1 - 0.005, 0.11, 0.97, M.metal, { solid: false });
+    else aabb(x0 + 0.005, x1 - 0.005, p - 0.01, p + 0.01, 0.11, 0.97, M.metal, { solid: false });
+  }
+  aabb(x0, x1, y0, y1, 0, 0.5, M.metal, { shadow: false }).visible = false; // Kollision
+}
+railing(10.71, 12.40, 10.62, 10.67);
+railing(12.35, 12.40, 9.97, 10.62);
+
+// --- Treppe (U-Treppe mit Wendelstufen, 17 Steigungen nach oben) --------------------
+{
+  const n = 17, rise = 2.95 / n, tread = 0.248;
+  for (let i = 0; i < 5; i++)
+    aabb(6.49, 7.48, 7.12 + i * tread, 7.12 + (i + 1) * tread, 0, (i + 1) * rise, M.stair, { solid: false });
+  const C = [7.60, 8.36], R0 = 0.12, X0 = 6.49, X1 = 8.72, Y1 = 9.57;
+  const rayHit = th => {
+    const c = Math.cos(th), s = Math.sin(th); let t = Infinity;
+    if (c < -1e-9) t = Math.min(t, (X0 - C[0]) / c);
+    if (c > 1e-9)  t = Math.min(t, (X1 - C[0]) / c);
+    if (s > 1e-9)  t = Math.min(t, (Y1 - C[1]) / s);
+    return [C[0] + c * t, C[1] + s * t];
+  };
+  const corners = [[X0, Y1], [X1, Y1]].map(p => [...p, Math.atan2(p[1] - C[1], p[0] - C[0])]);
+  for (let k = 0; k < 7; k++) {
+    const th0 = Math.PI - k * Math.PI / 7, th1 = Math.PI - (k + 1) * Math.PI / 7;
+    const pts = [rayHit(th0)];
+    corners.filter(c => c[2] < th0 && c[2] > th1).sort((p, q) => q[2] - p[2]).forEach(c => pts.push([c[0], c[1]]));
+    pts.push(rayHit(th1));
+    for (let m = 0; m <= 4; m++) {
+      const th = th1 + (th0 - th1) * m / 4;
+      pts.push([C[0] + R0 * Math.cos(th), C[1] + R0 * Math.sin(th)]);
+    }
+    const shape = new THREE.Shape(pts.map(p => new THREE.Vector2(wx(p[0]), -wz(p[1]))));
+    const g = new THREE.ExtrudeGeometry(shape, { depth: (6 + k) * rise, bevelEnabled: false });
+    const mesh = new THREE.Mesh(g, M.stair);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.castShadow = mesh.receiveShadow = true;
+    scene.add(mesh);
+  }
+  for (let j = 0; j < 5; j++)
+    aabb(7.72, 8.72, 8.36 - (j + 1) * tread, 8.36 - j * tread, 0, (13 + j) * rise, M.stair, { solid: false });
+  // Handlauf am Treppenauge
+  aabb(7.48, 7.52, 7.12, 8.36, 0.9, 0.94, M.metal, { solid: false });
+  solids.push({ cx: wx(7.605), cz: wz(8.31), hx: 1.115, hz: 1.26, a: 0 }); // Treppe im Rundgang gesperrt
+}
+
+// --- Decke (ein/ausblendbar, mit Treppenauge) --------------------------------------
+{
+  const s = new THREE.Shape();
+  s.moveTo(wx(0), wz(0)); s.lineTo(wx(15.20), wz(0)); s.lineTo(wx(15.20), wz(9.97)); s.lineTo(wx(0), wz(9.97)); s.closePath();
+  const hole = new THREE.Path();
+  hole.moveTo(wx(6.49), wz(6.25)); hole.lineTo(wx(6.49), wz(9.57)); hole.lineTo(wx(8.72), wz(9.57)); hole.lineTo(wx(8.72), wz(6.25)); hole.closePath();
+  s.holes.push(hole);
+  const m = new THREE.Mesh(new THREE.ShapeGeometry(s), M.ceil);
+  m.rotation.x = Math.PI / 2;
+  m.position.y = H;
+  ceiling.add(m);
+  ceiling.visible = false;
+}
+
+// --- Vorhang ---------------------------------------------------------------------
+const CUR = { x: 10.50, ySouth: 4.55, Lclosed: 4.13, Lopen: 0.42, folds: 22, cols: 240 };
+aabb(CUR.x - 0.02, CUR.x + 0.02, 0.42, CUR.ySouth, H - 0.04, H, M.rail, { solid: false, shadow: false });
+const curtainGeo = new THREE.PlaneGeometry(1, 1, CUR.cols, 1);
+const curtain = new THREE.Mesh(curtainGeo, M.curtain);
+curtain.receiveShadow = true;
+scene.add(curtain);
+let curtainT = 0, curtainTarget = 0;  // 0 = zu, 1 = auf
+const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+function updateCurtain() {
+  const k = ease(curtainT);
+  const L = CUR.Lclosed + (CUR.Lopen - CUR.Lclosed) * k;
+  const A = 0.035 + 0.075 * k;
+  const pos = curtainGeo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const col = i % (CUR.cols + 1), row = Math.floor(i / (CUR.cols + 1));
+    const u = col / CUR.cols;                 // 0 = Nordkante (beweglich), 1 = Südkante (fest)
+    const Y = CUR.ySouth - L * (1 - u);
+    const off = A * Math.sin(u * CUR.folds * 2 * Math.PI);
+    pos.setXYZ(i, wx(CUR.x) + off, row === 0 ? H - 0.05 : 0.02, wz(Y));
+  }
+  pos.needsUpdate = true;
+  curtainGeo.computeVertexNormals();
+  curtainGeo.computeBoundingSphere();
+}
+updateCurtain();
+
+// --- Raum-Labels -----------------------------------------------------------------
+const rooms = [
+  ['Kinder', '16,33 m²', 1.98, 2.7],
+  ['Eltern', '14,84 m²', 5.73, 2.5],
+  ['Spielen', '', 9.1, 2.5],
+  ['Wohnen', '', 13.17, 2.6],
+  ['Flur', '14,10 m²', 5.0, 5.45],
+  ['Gäste/Büro', '11,75 m²', 1.45, 7.3],
+  ['Bad', '7,68 m²', 4.1, 7.9],
+  ['WC', '1,73 m²', 5.9, 8.6],
+  ['Treppenhaus', '7,87 m²', 7.6, 6.75],
+  ['Küche', '', 10.2, 8.0],
+  ['Essen', '', 13.4, 7.9],
+  ['Veranda', '2,24 m²', 4.0, 10.33],
+  ['Balkon', '2,12 m²', 11.1, 10.33],
+];
+const labels = [];
+for (const [name, area, X, Y] of rooms) {
+  const div = document.createElement('div');
+  div.className = 'label';
+  div.innerHTML = `<b>${name}</b>${area ? `<span>${area}</span>` : ''}`;
+  const o = new CSS2DObject(div);
+  o.position.set(wx(X), 1.3, wz(Y));
+  scene.add(o);
+  labels.push(o);
+}
+// Im Rundgang: Labels hinter Wänden ausblenden
+const occluders = [];
+scene.traverse(o => { if (o.isMesh && (o.material === wallMats || o.material === woodMats)) occluders.push(o); });
+occluders.push(curtain);
+const ray = new THREE.Raycaster(), tmpV = new THREE.Vector3();
+let occlTimer = 0;
+function updateLabelOcclusion(dt) {
+  occlTimer -= dt;
+  if (occlTimer > 0) return;
+  occlTimer = 0.15;
+  for (const l of labels) {
+    let hidden = false;
+    if (mode === 'walk' && ceiling.visible) {
+      tmpV.subVectors(l.position, camera.position);
+      const dist = tmpV.length();
+      ray.set(camera.position, tmpV.normalize());
+      ray.far = dist - 0.05;
+      hidden = ray.intersectObjects(occluders, false).length > 0;
+    }
+    l.element.style.opacity = hidden ? '0' : '1';
+  }
+}
+
+// --- Rundgang (Ego-Perspektive) ------------------------------------------------------
+const plc = new PointerLockControls(camera, renderer.domElement);
+const overlay = document.getElementById('walkOverlay');
+const crosshair = document.getElementById('crosshair');
+const keys = {};
+addEventListener('keydown', e => { keys[e.code] = true; if (mode === 'walk' && e.code.startsWith('Arrow')) e.preventDefault(); });
+addEventListener('keyup', e => { keys[e.code] = false; });
+overlay.addEventListener('click', () => plc.lock());
+plc.addEventListener('lock', () => { overlay.style.display = 'none'; crosshair.style.display = 'block'; });
+plc.addEventListener('unlock', () => { if (mode === 'walk') overlay.style.display = 'flex'; crosshair.style.display = 'none'; });
+
+const RADIUS = 0.22, EYE = 1.65;
+function collide(p) {
+  for (let it = 0; it < 3; it++) {
+    for (const s0 of solids) {
+      const s = s0.door ? doorBox(s0.door) : s0;
+      const dx = p.x - s.cx, dz = p.z - s.cz, c = Math.cos(s.a), sn = Math.sin(s.a);
+      const lx = dx * c - dz * sn, lz = dx * sn + dz * c;
+      const qx = Math.max(-s.hx, Math.min(s.hx, lx)), qz = Math.max(-s.hz, Math.min(s.hz, lz));
+      let ex = lx - qx, ez = lz - qz, d = Math.hypot(ex, ez);
+      let px, pz;
+      if (d > 1e-6) {
+        if (d >= RADIUS) continue;
+        px = ex / d * (RADIUS - d); pz = ez / d * (RADIUS - d);
+      } else {
+        const ox = s.hx - Math.abs(lx), oz = s.hz - Math.abs(lz);
+        if (ox < oz) { px = Math.sign(lx || 1) * (ox + RADIUS); pz = 0; }
+        else { px = 0; pz = Math.sign(lz || 1) * (oz + RADIUS); }
+      }
+      p.x += px * c + pz * sn;
+      p.z += -px * sn + pz * c;
+    }
+  }
+}
+const fwd = new THREE.Vector3(), right = new THREE.Vector3();
+function walkStep(dt) {
+  let f = 0, r = 0;
+  if (keys.KeyW || keys.ArrowUp) f += 1;
+  if (keys.KeyS || keys.ArrowDown) f -= 1;
+  if (keys.KeyD || keys.ArrowRight) r += 1;
+  if (keys.KeyA || keys.ArrowLeft) r -= 1;
+  if (!f && !r) return;
+  camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
+  right.crossVectors(fwd, camera.up).normalize();
+  const speed = (keys.ShiftLeft || keys.ShiftRight ? 3.4 : 1.6) * dt / Math.hypot(f, r);
+  camera.position.addScaledVector(fwd, f * speed).addScaledVector(right, r * speed);
+  collide(camera.position);
+  camera.position.y = EYE;
+}
+
+// --- Modi & UI ---------------------------------------------------------------------
+let mode = 'orbit', tween = null, ceilingBeforeWalk = false, orbitSaved = null;
+const chkCeil = document.getElementById('chkCeil');
+const chkLabels = document.getElementById('chkLabels');
+const btnCurtain = document.getElementById('btnCurtain');
+const help = document.getElementById('help');
+const HELP = {
+  orbit: 'Linke Maustaste: drehen · Rechte Maustaste: verschieben · Mausrad: zoomen · Klick auf Tür: öffnen/schließen',
+  top: 'Linke Maustaste: drehen · Rechte Maustaste: verschieben · Mausrad: zoomen · Klick auf Tür: öffnen/schließen',
+  walk: 'Rundgang: W A S D gehen · Maus umsehen · Klick oder E auf Tür: öffnen/schließen · Esc Pause · „3D“ beendet',
+};
+function flyTo(pos, target, dur = 1.0) {
+  tween = { t: 0, dur, p0: camera.position.clone(), p1: pos.clone(), t0: orbit.target.clone(), t1: target.clone() };
+}
+function setCeiling(v) { ceiling.visible = v; chkCeil.checked = v; }
+function setMode(m) {
+  if (m === mode && m !== 'top') return;
+  const prev = mode;
+  if (prev === 'walk' && m !== 'walk') {
+    plc.unlock();
+    overlay.style.display = 'none';
+    setCeiling(ceilingBeforeWalk);
+    camera.position.copy(orbitSaved.pos);
+    orbit.target.copy(orbitSaved.target);
+    orbit.enabled = true;
+    orbit.update();
+  }
+  mode = m;
+  document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+  help.textContent = HELP[m];
+  if (m === 'walk') {
+    tween = null;
+    orbitSaved = { pos: camera.position.clone(), target: orbit.target.clone() };
+    orbit.enabled = false;
+    ceilingBeforeWalk = ceiling.visible;
+    setCeiling(true);
+    camera.position.set(wx(4.4), EYE, wz(5.45));
+    camera.lookAt(wx(11), EYE - 0.1, wz(5.45));
+    overlay.style.display = 'flex';
+  } else if (m === 'top') {
+    flyTo(new THREE.Vector3(0, 19, 0.6), new THREE.Vector3(0, 0, 0.3));
+  } else if (prev === 'top') {
+    flyTo(HOME.pos, HOME.target);
+  }
+}
+document.querySelectorAll('#modes button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (mode === 'walk') setMode('orbit');
+  mode = 'orbit';
+  document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('active', b.dataset.mode === 'orbit'));
+  help.textContent = HELP.orbit;
+  flyTo(HOME.pos, HOME.target);
+});
+btnCurtain.addEventListener('click', () => {
+  curtainTarget = curtainTarget ? 0 : 1;
+  btnCurtain.textContent = curtainTarget ? 'Vorhang schließen' : 'Vorhang öffnen';
+});
+chkCeil.addEventListener('change', () => { ceiling.visible = chkCeil.checked; });
+chkLabels.addEventListener('change', () => { labelRenderer.domElement.style.display = chkLabels.checked ? '' : 'none'; });
+help.textContent = HELP.orbit;
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  labelRenderer.setSize(innerWidth, innerHeight);
+});
+
+// --- Türen anklicken ------------------------------------------------------------------
+const pickRay = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let aimTimer = 0, downPos = null;
+function pickDoor(clientX, clientY, center = false) {
+  if (center) ndc.set(0, 0);
+  else ndc.set(clientX / innerWidth * 2 - 1, -(clientY / innerHeight) * 2 + 1);
+  pickRay.setFromCamera(ndc, camera);
+  pickRay.far = center ? 3.0 : Infinity;
+  const hits = pickRay.intersectObjects([...doorPick, ...occluders], false);
+  return hits.length ? hits[0].object.userData.door || null : null;
+}
+renderer.domElement.addEventListener('pointerdown', e => { downPos = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (mode === 'walk' || !downPos) return;
+  const moved = Math.hypot(e.clientX - downPos[0], e.clientY - downPos[1]);
+  downPos = null;
+  if (moved > 5) return;
+  const d = pickDoor(e.clientX, e.clientY);
+  if (d) toggleDoor(d);
+});
+renderer.domElement.addEventListener('pointermove', e => {
+  if (mode === 'walk' || e.buttons) return;
+  renderer.domElement.style.cursor = pickDoor(e.clientX, e.clientY) ? 'pointer' : '';
+});
+document.addEventListener('mousedown', () => {
+  if (mode === 'walk' && plc.isLocked) { const d = pickDoor(0, 0, true); if (d) toggleDoor(d); }
+});
+addEventListener('keydown', e => {
+  if (e.code === 'KeyE' && mode === 'walk') { const d = pickDoor(0, 0, true); if (d) toggleDoor(d); }
+});
+
+// --- Render-Loop ---------------------------------------------------------------------
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  if (curtainT !== curtainTarget) {
+    const step = dt / 1.2;
+    curtainT = curtainTarget > curtainT ? Math.min(curtainTarget, curtainT + step) : Math.max(curtainTarget, curtainT - step);
+    updateCurtain();
+  }
+  if (mode === 'walk') {
+    walkStep(dt);
+  } else {
+    if (tween) {
+      tween.t += dt;
+      const k = ease(Math.min(1, tween.t / tween.dur));
+      camera.position.lerpVectors(tween.p0, tween.p1, k);
+      orbit.target.lerpVectors(tween.t0, tween.t1, k);
+      if (k >= 1) tween = null;
+    }
+    orbit.update();
+  }
+  for (const d of doors) {
+    if (d.t === d.target) continue;
+    const step = dt / 0.7;
+    d.t = d.target > d.t ? Math.min(d.target, d.t + step) : Math.max(d.target, d.t - step);
+    d.pivot.rotation.y = d.a0 + d.delta * ease(d.t);
+  }
+  if (mode === 'walk' && plc.isLocked) {
+    aimTimer -= dt;
+    if (aimTimer <= 0) { aimTimer = 0.1; crosshair.classList.toggle('hot', !!pickDoor(0, 0, true)); }
+  }
+  updateLabelOcclusion(dt);
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+});
+
+// Für Tests/Debugging
+window.__app = { scene, camera, orbit, setMode, solids, doors, toggleDoor };
+</script>
+</body>
+</html>
