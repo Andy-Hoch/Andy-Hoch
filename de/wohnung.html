@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wohnung 2. OG – 3D</title>
+<title>Wohnung Familie Hoch – 3D</title>
 <style>
   :root { --ink:#1d2026; --muted:#6b7280; --line:#e3e5e8; --accent:#1f6feb; }
   html, body { margin:0; height:100%; overflow:hidden; background:#eceff2; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; color:var(--ink); }
@@ -42,8 +42,8 @@
 </head>
 <body>
 <div id="panel">
-  <h1>Wohnung · 2. OG</h1>
-  <div class="sub">Strombergstr. 14 · Raumhöhe 2,70 m</div>
+  <h1>Wohnung Familie Hoch</h1>
+  <div class="sub">Raumhöhe 2,70 m</div>
   <div class="gl">Ansicht</div>
   <div class="seg" id="modes">
     <button data-mode="orbit" class="active">3D</button>
@@ -52,7 +52,7 @@
   </div>
   <div class="gl">Einstellungen</div>
   <button class="btn primary" id="btnCurtain">Vorhang öffnen</button>
-  <button class="btn" id="btnFurn">Möbel ausblenden</button>
+  <button class="btn" id="btnFurn">Möbel einblenden</button>
   <label class="tog"><input type="checkbox" id="chkLabels" checked> Raumnamen</label>
   <label class="tog"><input type="checkbox" id="chkCeil"> Decke</label>
   <div style="height:8px"></div>
@@ -295,7 +295,7 @@ const Door = (a, b, head = 2.05) => ({ from: a, to: b, sill: 0, head, kind: 'doo
 
 // Drehtür: Scharnier, Spitze im geschlossenen Zustand, Richtung im geöffneten Zustand (Plan-Koordinaten)
 const doors = [], doorPick = [];
-function door(hinge, closedTip, openTip, { glass = false, open = true } = {}) {
+function door(hinge, closedTip, openTip, { glass = false, open = false } = {}) {   // Türen starten geschlossen
   const hx = wx(hinge[0]), hz = wz(hinge[1]);
   const cdx = wx(closedTip[0]) - hx, cdz = wz(closedTip[1]) - hz;
   const L = Math.hypot(cdx, cdz) - 0.02;
@@ -404,6 +404,7 @@ aabb(11.22, 11.40, 0.62, 1.51, 0, 0.90, wallMats);                     // Brüst
 // Tragende Holzstützen
 aabb(11.22, 11.40, 1.51, 1.71, 0, H, woodMats);
 aabb(11.22, 11.40, 2.68, 2.87, 0, H, woodMats);
+aabb(11.22, 11.40, 1.71, 2.68, 2.05, 2.20, woodMats, { solid: false });   // alter Türsturz (Schaukelbalken)
 // Kamin (rechteckig, weiß)
 aabb(10.58, 11.40, 4.06, 4.57, 0, H, wallMats);
 
@@ -427,22 +428,10 @@ aabb(2.70, 5.32, 9.95, 10.73, H, H + 0.14, M.ceil, { solid: false, parent: ceili
 // --- Balkon --------------------------------------------------------------------
 aabb(9.83, 12.40, 9.97, 10.69, -0.25, -0.004, M.slab, { solid: false });
 floor(9.93, 12.40, 9.57, 10.69, stoneTex, 1.2, 0.002);
-aabb(9.83, 9.93, 9.97, 10.69, 0, 1.0, wallMats);
-aabb(9.93, 10.71, 10.59, 10.69, 0, 1.0, wallMats);
-function railing(x0, x1, y0, y1) {
-  const horiz = (x1 - x0) > (y1 - y0), len = horiz ? x1 - x0 : y1 - y0;
-  aabb(x0, x1, y0, y1, 0.97, 1.02, M.metal, { solid: false });
-  aabb(x0, x1, y0, y1, 0.08, 0.11, M.metal, { solid: false });
-  const n = Math.floor(len / 0.12);
-  for (let i = 0; i <= n; i++) {
-    const p = (horiz ? x0 : y0) + i * len / n;
-    if (horiz) aabb(p - 0.01, p + 0.01, y0 + 0.005, y1 - 0.005, 0.11, 0.97, M.metal, { solid: false });
-    else aabb(x0 + 0.005, x1 - 0.005, p - 0.01, p + 0.01, 0.11, 0.97, M.metal, { solid: false });
-  }
-  aabb(x0, x1, y0, y1, 0, 0.5, M.metal, { shadow: false }).visible = false; // Kollision
-}
-railing(10.71, 12.40, 10.62, 10.67);
-railing(12.35, 12.40, 9.97, 10.62);
+aabb(9.83, 9.93, 9.97, 10.69, 0, H, wallMats);                         // Seitenwand West (raumhoch)
+aabb(9.93, 10.71, 10.59, 10.69, 0, H, wallMats);                        // Wandstück Süd (raumhoch)
+aabb(10.71, 12.40, 10.59, 10.69, 0, 1.0, wallMats);                     // Brüstung Süd
+aabb(12.30, 12.40, 9.97, 10.59, 0, 1.0, wallMats);                      // Brüstung Ost
 
 // --- Treppe (U-Treppe mit Wendelstufen, 17 Steigungen nach oben) --------------------
 {
@@ -496,7 +485,11 @@ railing(12.35, 12.40, 9.97, 10.62);
 }
 
 // --- Einrichtung (per Button ein-/ausblendbar) --------------------------------------
+const SWING = { top: 2.05, len: 1.62, A: 0, t: 0, w: Math.sqrt(9.81 / 1.75), tau: 6 };
+const swing = { group: null };
+const swingPick = [];
 const furniture = new THREE.Group();
+furniture.visible = false;   // Möbel starten ausgeblendet (Button „Möbel einblenden“)
 scene.add(furniture);
 {
 const std = (color, roughness = 0.8, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness, ...extra });
@@ -1114,6 +1107,25 @@ nightstand(0.42, 7.90, 90);
   psolid(5.455, 5.73, 7.95, 8.35);
   pc(6.29, 9.0, 0.05, 0.05, 0.68, 0.78, F.white, 16).rotation.x = Math.PI / 2;
 }
+
+// --- Brettschaukel am alten Türsturz (Durchgang Spielen | Wohnen) ---
+{
+  const g = new THREE.Group();                      // Drehpunkt = Unterkante Balken
+  g.position.set(wx(11.31), SWING.top, wz(2.195));
+  furniture.add(g);
+  swing.group = g;
+  const rope = std(0xd9c7a2, 1), seat = SWING.top - SWING.len;
+  for (const dz of [-0.215, 0.215]) {
+    // Ringhaken am Balken (fest)
+    const hook = mk(new THREE.TorusGeometry(0.022, 0.005, 8, 20), F.chrome, furniture, wx(11.31), SWING.top - 0.02, wz(2.195) + dz);
+    hook.rotation.y = Math.PI / 2;
+    // Seil (schwingt mit)
+    lc(g, 0, dz, 0.008, 0.008, -SWING.len + 0.015, -0.035, rope, 8);
+    lsph(g, 0, -SWING.len - 0.025, dz, 0.016, rope);  // Knoten unter dem Brett
+  }
+  ls(g, -0.08, 0.08, -SWING.len, -SWING.len + 0.03, -0.25, 0.25, F.oak, 0.012);  // Sitzbrett
+  g.traverse(o => { if (o.isMesh) { o.userData.swing = true; swingPick.push(o); } });
+}
 }
 
 // --- Vorhang ---------------------------------------------------------------------
@@ -1121,7 +1133,26 @@ const CUR = { x: 10.50, ySouth: 4.55, Lclosed: 4.13, Lopen: 0.42, folds: 22, col
 aabb(CUR.x - 0.02, CUR.x + 0.02, 0.42, CUR.ySouth, H - 0.04, H, M.rail, { solid: false, shadow: false });
 const curtainGeo = new THREE.PlaneGeometry(1, 1, CUR.cols, 1);
 const curtain = new THREE.Mesh(curtainGeo, M.curtain);
-curtain.receiveShadow = true;
+curtain.receiveShadow = false;   // ohne Decke: kein Eigenschatten (sonst flach grau); mit Decke: wie der Raum verschattet
+curtain.castShadow = true;
+// Stoff lässt Licht durch: feines Zufallsraster → nur ein Teil des Vorhangs landet in der
+// Shadow-Map, die weiche PCF-Filterung mittelt das zu einem leichten Schatten.
+const curtainDither = canvasTexture(64, 64, (g, w, h) => {
+  const img = g.createImageData(w, h);
+  for (let i = 0; i < w * h; i++) {
+    const v = rand() < 0.5 ? 255 : 0;
+    img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v;
+    img.data[i * 4 + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+});
+curtainDither.colorSpace = THREE.NoColorSpace;
+curtainDither.magFilter = curtainDither.minFilter = THREE.NearestFilter;
+curtainDither.generateMipmaps = false;
+curtainDither.repeat.set(70, 45);
+curtain.customDepthMaterial = new THREE.MeshDepthMaterial({
+  depthPacking: THREE.RGBADepthPacking, alphaMap: curtainDither, alphaTest: 0.5, side: THREE.DoubleSide,
+});
 scene.add(curtain);
 let curtainT = 0, curtainTarget = 0;  // 0 = zu, 1 = auf
 const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -1199,7 +1230,33 @@ const crosshair = document.getElementById('crosshair');
 const keys = {};
 addEventListener('keydown', e => { keys[e.code] = true; if (mode === 'walk' && e.code.startsWith('Arrow')) e.preventDefault(); });
 addEventListener('keyup', e => { keys[e.code] = false; });
-overlay.addEventListener('click', () => plc.lock());
+// Vollbild für den Rundgang (Fehler/fehlende Unterstützung still ignorieren)
+const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+function enterFullscreen() {
+  if (fsElement()) return;
+  const el = document.documentElement;
+  try {
+    const p = el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : el.webkitRequestFullscreen?.();
+    p?.catch?.(() => {});
+  } catch (e) {}
+}
+function exitFullscreen() {
+  if (!fsElement()) return;
+  try {
+    const p = document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen?.();
+    p?.catch?.(() => {});
+  } catch (e) {}
+}
+// Kein Rundgang auf Touch-Geräten (Handy/Tablet)
+const touchMQ = matchMedia('(hover: none) and (pointer: coarse)');
+let isTouch = touchMQ.matches;
+function applyTouch() {
+  isTouch = touchMQ.matches;
+  document.querySelector('#modes [data-mode="walk"]').hidden = isTouch;
+  if (isTouch && mode === 'walk') setMode('orbit');
+}
+touchMQ.addEventListener?.('change', applyTouch);
+overlay.addEventListener('click', () => { plc.lock(); enterFullscreen(); });
 plc.addEventListener('lock', () => { overlay.style.display = 'none'; crosshair.style.display = 'block'; });
 plc.addEventListener('unlock', () => { if (mode === 'walk') overlay.style.display = 'flex'; crosshair.style.display = 'none'; });
 
@@ -1257,12 +1314,14 @@ const HELP = {
 function flyTo(pos, target, dur = 1.0) {
   tween = { t: 0, dur, p0: camera.position.clone(), p1: pos.clone(), t0: orbit.target.clone(), t1: target.clone() };
 }
-function setCeiling(v) { ceiling.visible = v; chkCeil.checked = v; }
+function setCeiling(v) { ceiling.visible = v; chkCeil.checked = v; curtain.receiveShadow = v; }
 function setMode(m) {
   if (m === mode && m !== 'top') return;
+  if (m === 'walk' && isTouch) return;
   const prev = mode;
   if (prev === 'walk' && m !== 'walk') {
     plc.unlock();
+    exitFullscreen();
     overlay.style.display = 'none';
     setCeiling(ceilingBeforeWalk);
     camera.position.copy(orbitSaved.pos);
@@ -1282,6 +1341,7 @@ function setMode(m) {
     camera.position.set(wx(4.4), EYE, wz(5.45));
     camera.lookAt(wx(11), EYE - 0.1, wz(5.45));
     overlay.style.display = 'flex';
+    enterFullscreen();
   } else if (m === 'top') {
     flyTo(new THREE.Vector3(0, 19, 0.6), new THREE.Vector3(0, 0, 0.3));
   } else if (prev === 'top') {
@@ -1305,9 +1365,10 @@ btnFurn.addEventListener('click', () => {
   furniture.visible = !furniture.visible;
   btnFurn.textContent = furniture.visible ? 'Möbel ausblenden' : 'Möbel einblenden';
 });
-chkCeil.addEventListener('change', () => { ceiling.visible = chkCeil.checked; });
+chkCeil.addEventListener('change', () => { setCeiling(chkCeil.checked); });
 chkLabels.addEventListener('change', () => { labelRenderer.domElement.style.display = chkLabels.checked ? '' : 'none'; });
 help.textContent = HELP.orbit;
+applyTouch();
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
@@ -1324,8 +1385,15 @@ function pickDoor(clientX, clientY, center = false) {
   else ndc.set(clientX / innerWidth * 2 - 1, -(clientY / innerHeight) * 2 + 1);
   pickRay.setFromCamera(ndc, camera);
   pickRay.far = center ? 3.0 : Infinity;
-  const hits = pickRay.intersectObjects([...doorPick, ...occluders], false);
-  return hits.length ? hits[0].object.userData.door || null : null;
+  const pickables = furniture.visible ? [...doorPick, ...swingPick, ...occluders] : [...doorPick, ...occluders];
+  const hits = pickRay.intersectObjects(pickables, false);
+  if (!hits.length) return null;
+  const u = hits[0].object.userData;
+  return u.door || (u.swing ? 'swing' : null);
+}
+function activate(d) {
+  if (d === 'swing') { SWING.A = THREE.MathUtils.degToRad(25); SWING.t = 0; }
+  else if (d) toggleDoor(d);
 }
 renderer.domElement.addEventListener('pointerdown', e => { downPos = [e.clientX, e.clientY]; });
 renderer.domElement.addEventListener('pointerup', e => {
@@ -1334,17 +1402,17 @@ renderer.domElement.addEventListener('pointerup', e => {
   downPos = null;
   if (moved > 5) return;
   const d = pickDoor(e.clientX, e.clientY);
-  if (d) toggleDoor(d);
+  activate(d);
 });
 renderer.domElement.addEventListener('pointermove', e => {
   if (mode === 'walk' || e.buttons) return;
   renderer.domElement.style.cursor = pickDoor(e.clientX, e.clientY) ? 'pointer' : '';
 });
 document.addEventListener('mousedown', () => {
-  if (mode === 'walk' && plc.isLocked) { const d = pickDoor(0, 0, true); if (d) toggleDoor(d); }
+  if (mode === 'walk' && plc.isLocked) { const d = pickDoor(0, 0, true); activate(d); }
 });
 addEventListener('keydown', e => {
-  if (e.code === 'KeyE' && mode === 'walk') { const d = pickDoor(0, 0, true); if (d) toggleDoor(d); }
+  if (e.code === 'KeyE' && mode === 'walk') { const d = pickDoor(0, 0, true); activate(d); }
 });
 
 // --- Render-Loop ---------------------------------------------------------------------
@@ -1374,6 +1442,12 @@ renderer.setAnimationLoop(() => {
     d.t = d.target > d.t ? Math.min(d.target, d.t + step) : Math.max(d.target, d.t - step);
     d.pivot.rotation.y = d.a0 + d.delta * ease(d.t);
   }
+  if (SWING.A > 0 && swing.group) {   // gedämpftes Pendel
+    SWING.t += dt;
+    const amp = SWING.A * Math.exp(-SWING.t / SWING.tau);
+    swing.group.rotation.z = amp * Math.sin(SWING.w * SWING.t);
+    if (amp < 0.002) { SWING.A = 0; swing.group.rotation.z = 0; }
+  }
   if (mode === 'walk' && plc.isLocked) {
     aimTimer -= dt;
     if (aimTimer <= 0) { aimTimer = 0.1; crosshair.classList.toggle('hot', !!pickDoor(0, 0, true)); }
@@ -1384,7 +1458,7 @@ renderer.setAnimationLoop(() => {
 });
 
 // Für Tests/Debugging
-window.__app = { scene, camera, orbit, setMode, solids, doors, toggleDoor, furniture, collide };
+window.__app = { scene, camera, orbit, setMode, solids, doors, toggleDoor, furniture, collide, swing, SWING, activate, curtain, get isTouch() { return isTouch; } };
 </script>
 </body>
 </html>
