@@ -8,12 +8,23 @@
   :root { --ink:#1d2026; --muted:#6b7280; --line:#e3e5e8; --accent:#1f6feb; }
   html, body { margin:0; height:100%; overflow:hidden; background:#eceff2; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; color:var(--ink); }
   canvas { display:block; }
-  #labels { position:absolute; inset:0; pointer-events:none; }
+  #labels { position:absolute; inset:0; pointer-events:none; z-index:1; }   /* eigener Stapelkontext: Labels unter dem Panel */
   .label { text-align:center; line-height:1.15; padding:4px 8px; border-radius:7px; background:rgba(255,255,255,.82); box-shadow:0 1px 4px rgba(0,0,0,.12); backdrop-filter: blur(3px); white-space:nowrap; }
   .label b { display:block; font-size:13px; font-weight:650; }
   .label span { display:block; font-size:11px; color:var(--muted); }
   #panel { position:absolute; top:16px; left:16px; width:236px; padding:14px 14px 12px; border-radius:12px; background:rgba(255,255,255,.92); box-shadow:0 4px 20px rgba(0,0,0,.12); backdrop-filter: blur(6px); font-size:13px; z-index:5; }
-  #panel h1 { font-size:15px; margin:0 0 2px; }
+  #panel { transition: transform .32s cubic-bezier(.2,.8,.2,1), opacity .32s; }
+  #panel.collapsed { transform: translateX(calc(-100% - 24px)); opacity:0; pointer-events:none; }
+  #panel h1 { font-size:15px; margin:0 0 2px; padding-right:32px; }
+  .icon-btn { position:absolute; top:10px; right:10px; width:28px; height:28px; display:grid; place-items:center; padding:0; border:0; border-radius:8px; background:transparent; color:var(--muted); cursor:pointer; }
+  .icon-btn:hover { background:#f4f5f7; color:var(--ink); }
+  .icon-btn svg, #btnShow svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  #btnShow { position:absolute; top:16px; left:0; width:28px; height:44px; display:grid; place-items:center; padding:0; border:0; border-radius:0 10px 10px 0; background:rgba(255,255,255,.92); box-shadow:0 4px 20px rgba(0,0,0,.12); backdrop-filter: blur(6px); color:var(--ink); cursor:pointer; z-index:5;
+             opacity:0; transform:translateX(-100%); pointer-events:none; transition: transform .26s cubic-bezier(.2,.8,.2,1), opacity .26s; }
+  #btnShow:hover { background:#fff; }
+  body.panel-collapsed #btnShow { opacity:1; transform:none; pointer-events:auto; transition-delay:.12s; }
+  body.preload #panel, body.preload #btnShow { transition:none !important; }
+  @media (prefers-reduced-motion: reduce) { #panel, #btnShow { transition:none !important; } }
   #panel .sub { color:var(--muted); font-size:12px; margin-bottom:12px; }
   .gl { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:10px 0 6px; }
   .seg { display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
@@ -40,8 +51,11 @@
 } }
 </script>
 </head>
-<body>
+<body class="preload">
 <div id="panel">
+  <button id="btnHide" class="icon-btn" aria-label="Bedienfeld ausblenden" title="Bedienfeld ausblenden">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+  </button>
   <h1>Wohnung Familie Hoch</h1>
   <div class="sub">Raumhöhe 2,70 m</div>
   <div class="gl">Ansicht</div>
@@ -58,6 +72,9 @@
   <div style="height:8px"></div>
   <button class="btn" id="btnReset">Ansicht zurücksetzen</button>
 </div>
+<button id="btnShow" aria-label="Bedienfeld einblenden" title="Bedienfeld einblenden" inert>
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+</button>
 <div id="help"></div>
 <div id="crosshair"></div>
 <div id="walkOverlay"><div>
@@ -1521,6 +1538,23 @@ btnFurn.addEventListener('click', () => {
   furniture.visible = !furniture.visible;
   btnFurn.textContent = furniture.visible ? 'Möbel ausblenden' : 'Möbel einblenden';
 });
+// Bedienfeld nach links ein-/ausfahren (Zustand bleibt beim Neuladen erhalten)
+const panel = document.getElementById('panel');
+const btnHide = document.getElementById('btnHide'), btnShow = document.getElementById('btnShow');
+function setPanel(collapsed, { focus = true } = {}) {
+  panel.classList.toggle('collapsed', collapsed);
+  document.body.classList.toggle('panel-collapsed', collapsed);
+  panel.inert = collapsed;
+  btnShow.inert = !collapsed;
+  if (focus) (collapsed ? btnShow : btnHide).focus({ preventScroll: true });
+  try { localStorage.setItem('wohnung.panelCollapsed', collapsed ? '1' : '0'); } catch (e) {}
+}
+btnHide.addEventListener('click', () => setPanel(true));
+btnShow.addEventListener('click', () => setPanel(false));
+let panelStart = false;
+try { panelStart = localStorage.getItem('wohnung.panelCollapsed') === '1'; } catch (e) {}
+setPanel(panelStart, { focus: false });
+requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.remove('preload')));
 chkCeil.addEventListener('change', () => { setCeiling(chkCeil.checked); });
 chkLabels.addEventListener('change', () => { labelRenderer.domElement.style.display = chkLabels.checked ? '' : 'none'; });
 help.textContent = HELP.orbit;
