@@ -7,7 +7,8 @@
 <style>
   :root { --ink:#1d2026; --muted:#6b7280; --line:#e3e5e8; --accent:#1f6feb; }
   html, body { margin:0; height:100%; overflow:hidden; background:#eceff2; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; color:var(--ink); }
-  canvas { display:block; }
+  canvas { display:block; position:relative; z-index:1; }   /* WebGL über der CSS3D-Ebene (Video im Fernseher) */
+  #css3d { position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
   #labels { position:absolute; inset:0; pointer-events:none; z-index:1; }   /* eigener Stapelkontext: Labels unter dem Panel */
   .label { text-align:center; line-height:1.15; padding:4px 8px; border-radius:7px; background:rgba(255,255,255,.82); box-shadow:0 1px 4px rgba(0,0,0,.12); backdrop-filter: blur(3px); white-space:nowrap; }
   .label b { display:block; font-size:13px; font-weight:650; }
@@ -112,6 +113,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 // ---------------------------------------------------------------------------
@@ -122,7 +124,7 @@ const H = 3.05, OX = 4.35, OZ = 5.49;
 const wx = X => X - OX, wz = Y => Y - OZ;
 
 // --- Renderer / Szene -------------------------------------------------------
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });   // alpha: Loch im Bild für das Video
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
@@ -130,6 +132,11 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 document.body.appendChild(renderer.domElement);
+// CSS3D-Ebene unter dem WebGL-Bild: dort liegt das YouTube-Video, sichtbar durch ein „Loch“ im Fernseher
+const cssRenderer = new CSS3DRenderer();
+cssRenderer.setSize(innerWidth, innerHeight);
+cssRenderer.domElement.id = 'css3d';
+document.body.insertBefore(cssRenderer.domElement, renderer.domElement);
 
 const labelRenderer = new CSS2DRenderer();
 labelRenderer.setSize(innerWidth, innerHeight);
@@ -568,6 +575,7 @@ door([4.95, 7.10],  [5.80, 7.10],  [4.95, 7.95]);    // Büro (öffnet ins Büro
 const furniture = new THREE.Group();
 const toyEle = { group: null, body: null, legs: [], ears: [] };   // laufender Spielzeugelefant
 const elePick = [];
+const tv = { css: null, hole: null, pick: [], playing: false };   // Fernseher mit YouTube-Video
 furniture.visible = false;   // Möbel starten ausgeblendet (Button „Möbel einblenden“)
 scene.add(furniture);
 {
@@ -1020,6 +1028,24 @@ function books(x0, x1, Y, h0, mats, { alongY = false } = {}) {   // stehende Bü
     pb(tx - 0.012, tx + 0.012, tc - 0.04, tc + 0.04, top + 0.012, top + 0.10, W.black);
     pb(tx - 0.03, tx + 0.02, tc - 0.615, tc + 0.615, top + 0.08, top + 0.79, W.black);   // Gehäuse
     pb(tx - 0.031, tx - 0.03, tc - 0.605, tc + 0.605, top + 0.09, top + 0.78, std(0x0a0b0d, 0.08, { metalness: 0.3 }), false);   // Bildschirm
+    P.children.slice(-4).forEach(m => { m.userData.tv = true; tv.pick.push(m); });   // Fuß, Hals, Gehäuse, Bildschirm anklickbar
+    // Video: CSS3D-Element genau auf dem Bildschirm (1 px = 1 mm) und ein Loch im WebGL-Bild an derselben Stelle
+    {
+      const sw = 1.21, sh = 0.69, sx = tx - 0.032, sy = top + 0.435;
+      const el = document.createElement('div');
+      el.style.cssText = `width:${sw * 1000}px;height:${sh * 1000}px;background:#000;`;
+      tv.css = new CSS3DObject(el);
+      tv.css.position.set(wx(sx), sy, wz(tc));
+      tv.css.rotation.y = -Math.PI / 2;            // Bild nach Westen
+      tv.css.scale.setScalar(0.001);
+      tv.css.visible = false;
+      scene.add(tv.css);
+      tv.hole = mk(new THREE.PlaneGeometry(sw, sh), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0, blending: THREE.NoBlending, side: THREE.DoubleSide }), P, wx(sx), sy, wz(tc), false);
+      tv.hole.rotation.y = -Math.PI / 2;
+      tv.hole.receiveShadow = false;
+      tv.hole.visible = false;
+      tv.hole.userData.tv = true; tv.pick.push(tv.hole);
+    }
     // Deko: Vase links, Bücher und Lautsprecher rechts
     pc(4.12, 0.88, 0.06, 0.045, top, top + 0.28, W.pink, 20);
     books(2.45, 2.62, 4.15, top, [F.toys[2], F.sage, F.greyD], { alongY: true });
@@ -1622,7 +1648,7 @@ const HELP = {
   ele: 'Spielzeugelefant: W / ↑ laufen · S / ↓ bremsen/rückwärts · A D / ← → lenken · Leertaste stehen bleiben · Klick auf Tür: öffnen/schließen · Esc beenden',
 };
 function updateHelp() {
-  const eleHint = (mode === 'orbit' || mode === 'top') && furniture.visible ? (isTouch ? ' · Tippe auf den Spielzeugelefanten: laufen' : ' · Klick auf den Spielzeugelefanten: laufen') : '';
+  const eleHint = (mode === 'orbit' || mode === 'top') && furniture.visible ? (isTouch ? ' · Tippe auf den Spielzeugelefanten: laufen · auf den Fernseher: Video' : ' · Klick auf den Spielzeugelefanten: laufen · auf den Fernseher: Video') : '';
   help.textContent = HELP[mode] + eleHint;
 }
 function flyTo(pos, target, dur = 1.0) {
@@ -1711,6 +1737,7 @@ btnFurn.addEventListener('click', () => {
   furniture.visible = !furniture.visible;
   btnFurn.textContent = furniture.visible ? 'Möbel ausblenden' : 'Möbel einblenden';
   if (!furniture.visible && mode === 'ele') setMode(eleReturn);   // ohne Möbel kein Elefant
+  if (!furniture.visible && tv.playing) setTV(false);             // ohne Möbel kein Fernseher
   updateHelp();
 });
 // Bedienfeld nach links ein-/ausfahren (Zustand bleibt beim Neuladen erhalten)
@@ -1739,6 +1766,7 @@ addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
   labelRenderer.setSize(innerWidth, innerHeight);
+  cssRenderer.setSize(innerWidth, innerHeight);
 });
 
 // --- Türen und Elefant anklicken ---------------------------------------------------------
@@ -1749,14 +1777,38 @@ function pickDoor(clientX, clientY, center = false) {
   else ndc.set(clientX / innerWidth * 2 - 1, -(clientY / innerHeight) * 2 + 1);
   pickRay.setFromCamera(ndc, camera);
   pickRay.far = center ? 3.0 : Infinity;
-  const pickables = [...doorPick, ...(furniture.visible && mode !== 'ele' ? elePick : []), ...occluders];
+  const pickables = [...doorPick, ...(furniture.visible && mode !== 'ele' ? elePick : []), ...(furniture.visible ? tv.pick : []), ...occluders];
   const hits = pickRay.intersectObjects(pickables, false);
   if (!hits.length) return null;
   const u = hits[0].object.userData;
-  return u.door || (u.toy ? 'ele' : null);
+  return u.door || (u.toy ? 'ele' : u.tv ? 'tv' : null);
 }
+// Fernseher: Klick startet/stoppt das YouTube-Video auf dem Bildschirm
+const TV_VIDEO = 'xvFZjo5PgG0';
+function setTV(on) {
+  tv.playing = on;
+  tv.css.element.replaceChildren();
+  if (on && !/^https?:$/.test(location.protocol)) {
+    // YouTube spielt nur auf Seiten mit Web-Adresse (http/https), nicht bei direkt geöffneter Datei
+    const m = document.createElement('div');
+    m.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:60px;box-sizing:border-box;color:#ddd;font:500 42px/1.35 -apple-system,system-ui,sans-serif;background:#111;';
+    m.textContent = 'YouTube-Videos laufen nur, wenn die Seite über einen Webserver geöffnet ist (http://…), nicht als Datei.';
+    tv.css.element.appendChild(m);
+  } else if (on) {
+    const f = document.createElement('iframe');
+    f.src = `https://www.youtube.com/embed/${TV_VIDEO}?autoplay=1&playsinline=1&rel=0&modestbranding=1`;
+    f.allow = 'autoplay; encrypted-media; picture-in-picture';
+    f.referrerPolicy = 'strict-origin-when-cross-origin';
+    f.style.cssText = 'width:100%;height:100%;border:0;';
+    tv.css.element.appendChild(f);
+  }
+  tv.css.visible = on;
+  tv.hole.visible = on;
+}
+const toggleTV = () => setTV(!tv.playing);
 function activate(d) {
   if (d === 'ele') setMode('ele');
+  else if (d === 'tv') toggleTV();
   else if (d) toggleDoor(d);
 }
 renderer.domElement.addEventListener('pointerdown', e => { downPos = [e.clientX, e.clientY]; });
@@ -1810,10 +1862,11 @@ renderer.setAnimationLoop(() => {
   updateLabelOcclusion(dt);
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
+  if (tv.playing) cssRenderer.render(scene, camera);
 });
 
 // Für Tests/Debugging
-window.__app = { scene, camera, orbit, setMode, solids, doors, toggleDoor, furniture, collide, activate, toyEle, ele, keys, touchCtl, tilt, eleStep, get mode() { return mode; }, get isTouch() { return isTouch; } };
+window.__app = { scene, camera, orbit, setMode, solids, doors, toggleDoor, furniture, collide, activate, toyEle, ele, keys, tv, setTV, touchCtl, tilt, eleStep, get mode() { return mode; }, get isTouch() { return isTouch; } };
 </script>
 </body>
 </html>
