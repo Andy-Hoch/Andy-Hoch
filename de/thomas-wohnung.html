@@ -1785,6 +1785,9 @@ function pickDoor(clientX, clientY, center = false) {
 }
 // Fernseher: Klick startet/stoppt das YouTube-Video auf dem Bildschirm
 const TV_VIDEO = 'xvFZjo5PgG0';
+// iPhone/iPad: Safari startet Videos mit Ton nicht automatisch (der Tipp landet auf dem 3D-Bild, nicht im
+// Video) und zeigt dann nur das Vorschaubild. Ohne Ton ist automatisches Abspielen erlaubt → dort stumm starten.
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 function setTV(on) {
   tv.playing = on;
   tv.css.element.replaceChildren();
@@ -1796,7 +1799,7 @@ function setTV(on) {
     tv.css.element.appendChild(m);
   } else if (on) {
     const f = document.createElement('iframe');
-    f.src = `https://www.youtube.com/embed/${TV_VIDEO}?autoplay=1&playsinline=1&rel=0&modestbranding=1`;
+    f.src = `https://www.youtube.com/embed/${TV_VIDEO}?autoplay=1&playsinline=1&rel=0&modestbranding=1${isIOS ? '&mute=1' : ''}`;
     f.allow = 'autoplay; encrypted-media; picture-in-picture';
     f.referrerPolicy = 'strict-origin-when-cross-origin';
     f.style.cssText = 'width:100%;height:100%;border:0;';
