@@ -1412,6 +1412,9 @@ function exitFullscreen() {
 }
 // Kein Rundgang auf Touch-Geräten (Handy/Tablet)
 const touchMQ = matchMedia('(hover: none) and (pointer: coarse)');
+// iPhone/iPad: Safari startet Videos mit Ton nicht automatisch (der Tipp landet auf dem 3D-Bild, nicht im
+// Video) und zeigt dann nur das Vorschaubild. Ohne Ton ist automatisches Abspielen erlaubt → dort stumm starten.
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 let isTouch = touchMQ.matches;
 function applyTouch() {
   isTouch = touchMQ.matches;
@@ -1648,7 +1651,7 @@ const HELP = {
   ele: 'Spielzeugelefant: W / ↑ laufen · S / ↓ bremsen/rückwärts · A D / ← → lenken · Leertaste stehen bleiben · Klick auf Tür: öffnen/schließen · Esc beenden',
 };
 function updateHelp() {
-  const eleHint = (mode === 'orbit' || mode === 'top') && furniture.visible ? (isTouch ? ' · Tippe auf den Spielzeugelefanten: laufen · auf den Fernseher: Video' : ' · Klick auf den Spielzeugelefanten: laufen · auf den Fernseher: Video') : '';
+  const eleHint = (mode === 'orbit' || mode === 'top') && furniture.visible ? (isTouch ? ' · Tippe auf den Spielzeugelefanten: laufen · auf den Fernseher: Video' + (isIOS ? ' (nochmal tippen: Ton an)' : '') : ' · Klick auf den Spielzeugelefanten: laufen · auf den Fernseher: Video') : '';
   help.textContent = HELP[mode] + eleHint;
 }
 function flyTo(pos, target, dur = 1.0) {
@@ -1785,11 +1788,9 @@ function pickDoor(clientX, clientY, center = false) {
 }
 // Fernseher: Klick startet/stoppt das YouTube-Video auf dem Bildschirm
 const TV_VIDEO = 'xvFZjo5PgG0';
-// iPhone/iPad: Safari startet Videos mit Ton nicht automatisch (der Tipp landet auf dem 3D-Bild, nicht im
-// Video) und zeigt dann nur das Vorschaubild. Ohne Ton ist automatisches Abspielen erlaubt → dort stumm starten.
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 function setTV(on) {
   tv.playing = on;
+  tv.frame = null; tv.muted = false;
   tv.css.element.replaceChildren();
   if (on && !/^https?:$/.test(location.protocol)) {
     // YouTube spielt nur auf Seiten mit Web-Adresse (http/https), nicht bei direkt geöffneter Datei
@@ -1799,16 +1800,31 @@ function setTV(on) {
     tv.css.element.appendChild(m);
   } else if (on) {
     const f = document.createElement('iframe');
-    f.src = `https://www.youtube.com/embed/${TV_VIDEO}?autoplay=1&playsinline=1&rel=0&modestbranding=1${isIOS ? '&mute=1' : ''}`;
+    f.src = `https://www.youtube.com/embed/${TV_VIDEO}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(location.origin)}${isIOS ? '&mute=1' : ''}`;
     f.allow = 'autoplay; encrypted-media; picture-in-picture';
     f.referrerPolicy = 'strict-origin-when-cross-origin';
     f.style.cssText = 'width:100%;height:100%;border:0;';
+    f.addEventListener('load', () => ytSend({ event: 'listening', id: 1 }));   // Zustandsmeldungen des Players abonnieren
     tv.css.element.appendChild(f);
+    tv.frame = f;
+    tv.muted = isIOS;
+    tv.info = {};
   }
   tv.css.visible = on;
   tv.hole.visible = on;
 }
-const toggleTV = () => setTV(!tv.playing);
+// Steuerung des YouTube-Players per postMessage (IFrame-API ohne Zusatzskript)
+function ytSend(msg) { tv.frame?.contentWindow?.postMessage(JSON.stringify(msg), 'https://www.youtube.com'); }
+const ytCmd = (func, args = []) => ytSend({ event: 'command', func, args });
+addEventListener('message', e => {
+  if (!/youtube\.com$/.test(new URL(e.origin).hostname) || typeof e.data !== 'string') return;
+  try { const d = JSON.parse(e.data); if (d.info) Object.assign(tv.info, d.info); } catch (_) { return; }
+});
+// Tippen: aus → an (iPhone: stumm) · iPhone stumm → Ton an · sonst → aus
+function toggleTV() {
+  if (tv.playing && tv.muted) { ytCmd('unMute'); ytCmd('setVolume', [100]); ytCmd('playVideo'); tv.muted = false; return; }
+  setTV(!tv.playing);
+}
 function activate(d) {
   if (d === 'ele') setMode('ele');
   else if (d === 'tv') toggleTV();
