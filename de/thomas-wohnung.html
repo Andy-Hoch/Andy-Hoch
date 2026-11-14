@@ -36,13 +36,28 @@
   .btn.primary { background:#f7f3ea; border-color:#e4dccb; }
   .tog { display:flex; align-items:center; gap:8px; padding:4px 0; cursor:pointer; }
   #help { position:absolute; left:16px; bottom:16px; max-width:calc(100% - 32px); padding:8px 12px; border-radius:9px; background:rgba(255,255,255,.85); font-size:12px; color:var(--muted); z-index:5; }
+  #hud { position:absolute; right:16px; bottom:16px; display:none; padding:8px 14px; border-radius:9px; background:rgba(255,255,255,.85); font-size:22px; font-weight:600; font-variant-numeric:tabular-nums; color:#1f2328; z-index:5; }
+  #hud small { font-size:12px; font-weight:500; color:var(--muted); margin-left:4px; }
   #walkOverlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(20,22,26,.35); z-index:4; cursor:pointer; }
-  #walkOverlay > div { background:#fff; padding:18px 24px; border-radius:12px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,.2); max-width:320px; }
-  #walkOverlay b { font-size:16px; }
-  #walkOverlay p { margin:8px 0 0; font-size:13px; color:var(--muted); }
+  #eleOverlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center; padding:16px; background:rgba(20,22,26,.35); z-index:7; cursor:pointer; }
+  #walkOverlay > div, #eleOverlay > div { background:#fff; padding:18px 24px; border-radius:12px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,.2); max-width:320px; }
+  #walkOverlay b, #eleOverlay b { font-size:16px; }
+  #walkOverlay p, #eleOverlay p { margin:8px 0 0; font-size:13px; color:var(--muted); }
   #crosshair { position:absolute; left:50%; top:50%; width:6px; height:6px; margin:-3px 0 0 -3px; border-radius:50%; background:rgba(255,255,255,.9); box-shadow:0 0 0 1px rgba(0,0,0,.35); display:none; z-index:4; pointer-events:none; }
   #crosshair.hot { width:12px; height:12px; margin:-6px 0 0 -6px; background:#ffd75e; }
   @media (max-width: 600px) { #panel { width:auto; right:16px; } }
+  /* Elefanten-Modus auf Touch-Geräten: Lauf-Button, Lenk-Buttons (Ausweichlösung), Beenden */
+  .drive-btn { position:absolute; display:none; align-items:center; justify-content:center; border:0; border-radius:50%; background:rgba(255,255,255,.82); color:#1f2328; font:inherit; font-weight:700; box-shadow:0 4px 18px rgba(0,0,0,.18); z-index:6; touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; transition:transform .08s, background-color .08s; }
+  .drive-btn.down { transform:scale(.92); background:rgba(225,228,232,.92); }
+  #btnGas { right:calc(20px + env(safe-area-inset-right)); bottom:calc(24px + env(safe-area-inset-bottom)); width:88px; height:88px; font-size:16px; letter-spacing:.06em; }
+  #btnSteerL, #btnSteerR { bottom:calc(32px + env(safe-area-inset-bottom)); width:68px; height:68px; font-size:22px; }
+  #btnSteerL { left:calc(20px + env(safe-area-inset-left)); }
+  #btnSteerR { left:calc(100px + env(safe-area-inset-left)); }
+  #btnEleExit { left:calc(16px + env(safe-area-inset-left)); top:calc(16px + env(safe-area-inset-top)); width:44px; height:44px; font-size:18px; font-weight:600; }
+  body.driving #btnGas, body.driving #btnEleExit { display:flex; }
+  body.driving.steer-buttons #btnSteerL, body.driving.steer-buttons #btnSteerR { display:flex; }
+  body.driving #panel, body.driving #btnShow, body.driving #help { display:none; }
+  body.driving #hud { bottom:auto; top:calc(16px + env(safe-area-inset-top)); right:calc(16px + env(safe-area-inset-right)); }
 </style>
 <script type="importmap">
 { "imports": {
@@ -75,6 +90,16 @@
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
 </button>
 <div id="help"></div>
+<div id="hud">0<small>km/h</small></div>
+<button id="btnGas" class="drive-btn" aria-label="Laufen (gedrückt halten)">LOS</button>
+<button id="btnSteerL" class="drive-btn" aria-label="Nach links lenken">◀</button>
+<button id="btnSteerR" class="drive-btn" aria-label="Nach rechts lenken">▶</button>
+<button id="btnEleExit" class="drive-btn" aria-label="Laufen beenden" title="Laufen beenden">✕</button>
+<div id="eleOverlay"><div>
+  <b>Spielzeugelefant</b>
+  <p>Halte das Handy wie ein Lenkrad und tippe zum Starten.</p>
+  <p>Kippen = lenken · LOS gedrückt halten = laufen<br>Loslassen = stehen bleiben · ✕ = beenden</p>
+</div></div>
 <div id="crosshair"></div>
 <div id="walkOverlay"><div>
   <b>Rundgang</b>
@@ -151,32 +176,30 @@ function canvasTexture(w, h, draw) {
 let seed = 7;
 const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 
-// Eichenparkett: 8 Dielenreihen pro Kachel (Kachel = 1,44 m)
+// Stäbchenparkett (Eiche) im Würfelverband: Würfel 12 × 12 cm aus je 5 Stäbchen, abwechselnd
+// längs/quer verlegt. Kachel = 0,96 m (8 × 8 Würfel)
+const PARQUET_TILE = 0.96;
 const woodTex = canvasTexture(1024, 1024, (g, w, h) => {
-  const rows = 8, rh = h / rows;
-  for (let r = 0; r < rows; r++) {
-    let x = -rand() * w * 0.5;
-    while (x < w) {
-      const len = w * (0.3 + rand() * 0.45);
-      const l = 66 + rand() * 9;
-      for (const off of [0, -w, w]) {
-        g.fillStyle = `hsl(${30 + rand() * 6}, ${36 + rand() * 10}%, ${l}%)`;
-        g.fillRect(x + off, r * rh, len, rh);
-        g.strokeStyle = 'rgba(110,70,35,.10)';
-        g.lineWidth = 1;
-        for (let k = 0; k < 6; k++) {
-          const yy = r * rh + 6 + rand() * (rh - 12);
-          g.beginPath(); g.moveTo(x + off, yy);
-          g.bezierCurveTo(x + off + len * .3, yy + (rand() - .5) * 8, x + off + len * .7, yy + (rand() - .5) * 8, x + off + len, yy);
-          g.stroke();
-        }
-        g.fillStyle = 'rgba(90,60,30,.35)';
-        g.fillRect(x + off + len - 1.5, r * rh, 1.5, rh);
+  const n = 8, s = w / n, k = 5, st = s / k;
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    const x0 = i * s, y0 = j * s, across = (i + j) % 2 === 1;
+    for (let m = 0; m < k; m++) {
+      const l = 58 + rand() * 13;
+      g.fillStyle = `hsl(${31 + rand() * 7}, ${38 + rand() * 12}%, ${l}%)`;
+      const [rx, ry, rw, rh] = across ? [x0, y0 + m * st, s, st] : [x0 + m * st, y0, st, s];
+      g.fillRect(rx, ry, rw, rh);
+      g.strokeStyle = 'rgba(115,75,38,.13)'; g.lineWidth = 1;   // Maserung
+      for (let q = 0; q < 3; q++) {
+        g.beginPath();
+        if (across) { const yy = ry + 3 + rand() * (rh - 6); g.moveTo(rx, yy); g.bezierCurveTo(rx + rw * .3, yy + (rand() - .5) * 4, rx + rw * .7, yy + (rand() - .5) * 4, rx + rw, yy); }
+        else { const xx = rx + 3 + rand() * (rw - 6); g.moveTo(xx, ry); g.bezierCurveTo(xx + (rand() - .5) * 4, ry + rh * .3, xx + (rand() - .5) * 4, ry + rh * .7, xx, ry + rh); }
+        g.stroke();
       }
-      x += len;
+      g.fillStyle = 'rgba(90,60,30,.30)';                        // Fuge zwischen den Stäbchen
+      if (across) g.fillRect(rx, ry + rh - 1, rw, 1); else g.fillRect(rx + rw - 1, ry, 1, rh);
     }
-    g.fillStyle = 'rgba(90,60,30,.35)';
-    g.fillRect(0, r * rh, w, 1.5);
+    g.fillStyle = 'rgba(90,60,30,.38)';                          // Fuge um den Würfel
+    g.fillRect(x0, y0, s, 1.5); g.fillRect(x0, y0, 1.5, s);
   }
 });
 // Dunkle Granitfliesen 60 × 60 cm (Kachel = 1,2 m)
@@ -195,6 +218,33 @@ const tileTex = canvasTexture(1024, 1024, (g, w, h) => {
       const sz = 1 + rand() * 3;
       g.fillRect(x0 + rand() * (ss - sz), y0 + rand() * (ss - sz), sz, sz);
     }
+  }
+});
+// Dunkelrotes Linoleum, leicht marmoriert (Kachel = 1,0 m)
+const linoTex = canvasTexture(512, 512, (g, w, h) => {
+  g.fillStyle = '#6e1c1e'; g.fillRect(0, 0, w, h);
+  for (let k = 0; k < 14000; k++) {
+    g.fillStyle = rand() > 0.5 ? `rgba(150,52,48,${0.05 + rand() * 0.10})` : `rgba(40,8,10,${0.05 + rand() * 0.12})`;
+    g.fillRect(rand() * w, rand() * h, 1 + rand() * 3, 1 + rand() * 3);
+  }
+  for (let i = 0; i < 26; i++) {                      // feine helle Schlieren
+    g.strokeStyle = `rgba(170,70,64,${0.06 + rand() * 0.10})`;
+    g.lineWidth = 1 + rand() * 3;
+    let x = rand() * w, y = rand() * h;
+    g.beginPath(); g.moveTo(x, y);
+    for (let s = 0; s < 5; s++) { const nx = x + (rand() - 0.5) * 140, ny = y + (rand() - 0.5) * 60; g.quadraticCurveTo((x + nx) / 2 + (rand() - 0.5) * 40, (y + ny) / 2 + (rand() - 0.5) * 40, nx, ny); x = nx; y = ny; }
+    g.stroke();
+  }
+});
+// Mosaikfliesen 5 × 5 cm in Blautönen (Kachel = 0,5 m = 10 × 10 Steine)
+const mosaicTex = canvasTexture(1024, 1024, (g, w, h) => {
+  const n = 10, s = w / n, blues = ['#1f4e79', '#2c6aa0', '#3f85bf', '#6aa6d6', '#9cc6e8', '#174066', '#4d7fa8', '#2a5d8c', '#83b4dc'];
+  g.fillStyle = '#d9dde0'; g.fillRect(0, 0, w, h);    // Fuge
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    g.fillStyle = blues[Math.floor(rand() * blues.length)];
+    g.fillRect(i * s + 3, j * s + 3, s - 6, s - 6);
+    g.fillStyle = `rgba(255,255,255,${0.04 + rand() * 0.08})`;   // leichter Glanz
+    g.fillRect(i * s + 6, j * s + 6, (s - 12) * 0.6, (s - 12) * 0.35);
   }
 });
 // Steinplatten (Kachel = 1,2 m)
@@ -365,7 +415,7 @@ function floor(x0, x1, y0, y1, tex, tile, y = 0, roughness = 0.75) {
 
 // --- Umriss, Bodenplatte, Umgebung --------------------------------------------------
 const OUTLINE = [[-0.70, -0.74], [7.72, -0.74], [7.72, 2.10], [9.39, 2.10], [9.39, 7.32], [7.82, 7.32], [7.82, 11.72], [-0.70, 11.72]];
-const HOLE = { x0: 7.10, x1: 8.37, y0: 4.69, y1: 6.50 };   // Treppenöffnung
+const HOLE = { x0: 7.24, x1: 8.37, y0: 4.69, y1: 6.50 };   // Treppenöffnung
 const rectPts = (x0, x1, y0, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
 const holePts = rectPts(HOLE.x0, HOLE.x1, HOLE.y0, HOLE.y1);
 // Fläche aus Plan-Punkten. up = true: für rotation.x = -90° (Normale nach oben), sonst für +90° (wie die Decke)
@@ -390,14 +440,15 @@ function planShape(pts, holes = [], up = true) {
 }
 
 // --- Böden ------------------------------------------------------------------------
-floor(0.00, 4.36, 0.00, 10.55, woodTex, 1.44, 0);                  // Wohnen + Schlafen (Parkett)
-floor(4.36, 7.43, 0.00, 2.38, woodTex, 1.44, 0);                   // Küche
-floor(4.36, 5.91, 2.38, 7.32, woodTex, 1.44, 0);                   // Flur
-floor(4.36, 7.27, 7.32, 11.27, woodTex, 1.44, 0);                  // Büro
-floor(5.91, 8.90, 2.48, 4.01, tileTex, 1.2, 0.002, 0.35);          // Bad (Fliesen)
-floor(5.91, HOLE.x0, 4.20, 6.88, stoneTex, 1.2, 0.002);             // Treppe (Steinplatten um die Öffnung)
-floor(HOLE.x1, 8.90, 4.20, 6.88, stoneTex, 1.2, 0.002);
-floor(HOLE.x0, HOLE.x1, 4.20, HOLE.y0, stoneTex, 1.2, 0.002);
+floor(0.00, 4.36, 0.00, 10.55, woodTex, PARQUET_TILE, 0);                  // Wohnen + Schlafen (Stäbchenparkett)
+floor(4.36, 7.43, 0.00, 2.38, linoTex, 1.0, 0, 0.5);                       // Küche (dunkelrotes Linoleum)
+floor(4.36, 5.91, 2.38, 7.32, woodTex, PARQUET_TILE, 0);                   // Flur
+floor(4.36, 7.27, 7.32, 11.27, woodTex, PARQUET_TILE, 0);                  // Büro
+floor(5.91, 8.90, 2.48, 4.01, mosaicTex, 0.5, 0.002, 0.3);         // Bad (Mosaik 5 × 5 cm, Blautöne)
+floor(5.91, 7.10, 5.39, 6.88, woodTex, PARQUET_TILE, 0);            // Flur-Nische mit Einbauschrank
+floor(5.91, 8.90, 4.20, HOLE.y0, stoneTex, 1.2, 0.002);             // Treppenhaus (Steinplatten um die Öffnung)
+floor(5.91, HOLE.x0, HOLE.y0, 5.39, stoneTex, 1.2, 0.002);
+floor(HOLE.x1, 8.90, HOLE.y0, 6.88, stoneTex, 1.2, 0.002);
 floor(HOLE.x0, HOLE.x1, HOLE.y1, 6.88, stoneTex, 1.2, 0.002);
 
 // --- Außenwände -----------------------------------------------------------------
@@ -407,7 +458,32 @@ vWall(7.43, 7.72, 0, 2.10);                                                // K�
 hWall(2.10, 2.48, 5.91, 9.39);                                             // Küche | Bad (außen bis zur Ostkante)
 vWall(8.90, 9.39, 2.48, 6.88, [Win(4.56, 5.42, 0.50, 2.20)]);              // Ost Bad/Treppe (BRH 0,50)
 hWall(10.55, 11.45, -0.70, 4.36, [Win(0.56, 2.15)]);                       // Süd Schlafen
-hWall(11.27, 11.72, 4.36, 7.82, [Win(5.035, 6.075, 1.40)]);                // Süd Büro (BRH 1,40)
+hWall(11.27, 11.72, 4.36, 5.035);                                           // Süd Büro, links vom ovalen Fenster
+hWall(11.27, 11.72, 6.075, 7.82);                                           // Süd Büro, rechts
+// Ovales Fenster (breiter als hoch, Unterkante auf BRH 1,40): Wandstück mit elliptischem Loch
+{
+  const X0 = 5.035, X1 = 6.075, Y0 = 11.27, Y1 = 11.72, cx = (X0 + X1) / 2, rx = 0.50, ry = 0.34, cy = 1.40 + ry;
+  const s = new THREE.Shape([[X0, 0], [X1, 0], [X1, H - 0.002], [X0, H - 0.002]].map(([X, h]) => new THREE.Vector2(wx(X), h)));
+  s.holes.push(new THREE.Path().absellipse(wx(cx), cy, rx, ry, 0, Math.PI * 2, true));
+  const m = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: Y1 - Y0, bevelEnabled: false, curveSegments: 48 }), wallMats);
+  m.position.z = wz(Y0);
+  m.castShadow = m.receiveShadow = true;
+  scene.add(m);
+  aabb(X0, X1, Y0, Y1, H - 0.002, H, wallMats, { solid: false });          // dunkle Schnittkante oben
+  solids.push({ cx: wx(cx), cz: wz((Y0 + Y1) / 2), hx: (X1 - X0) / 2, hz: (Y1 - Y0) / 2, a: 0 });
+  // Rahmen (weiß) und Glas in Wandmitte
+  const fr = new THREE.Shape(); fr.absellipse(wx(cx), cy, rx, ry, 0, Math.PI * 2, false);
+  fr.holes.push(new THREE.Path().absellipse(wx(cx), cy, rx - 0.055, ry - 0.055, 0, Math.PI * 2, true));
+  const f = new THREE.Mesh(new THREE.ExtrudeGeometry(fr, { depth: 0.07, bevelEnabled: false, curveSegments: 48 }), M.frame);
+  f.position.z = wz((Y0 + Y1) / 2) - 0.035;
+  f.castShadow = f.receiveShadow = true;
+  scene.add(f);
+  const gl = new THREE.Shape(); gl.absellipse(wx(cx), cy, rx - 0.05, ry - 0.05, 0, Math.PI * 2, false);
+  const glassM = M.glass.clone(); glassM.side = THREE.DoubleSide;
+  const gm = new THREE.Mesh(new THREE.ShapeGeometry(gl, 48), glassM);
+  gm.position.z = wz((Y0 + Y1) / 2);
+  scene.add(gm);
+}
 vWall(7.27, 7.82, 7.32, 11.27, [Win(8.76, 9.78, 1.355)]);                  // Ost Büro (BRH 1,355, Fenster neu)
 
 // --- Innenwände -----------------------------------------------------------------
@@ -416,7 +492,22 @@ hWall(2.20, 2.38, 4.55, 5.91, [Door(5.10, 5.89)]);                          // K
 vWall(4.36, 4.65, 2.38, 6.88, [Door(2.80, 3.69), Door(5.83, 6.73)]);        // Flur West: Wohnen, Schlafen
 hWall(5.30, 5.62, 0, 4.36);                                                // Wohnen | Schlafen
 vWall(4.36, 4.55, 6.88, 11.27);                                            // Schlafen | Büro
-vWall(5.91, 6.11, 2.48, 6.88, [Door(2.75, 3.55), Door(4.56, 5.39)]);        // Flur Ost: Bad, Treppe
+vWall(5.91, 6.11, 2.48, 5.54, [Door(2.75, 3.55), Door(4.56, 5.39)]);        // Flur Ost: Bad, Wohnungstür
+hWall(5.39, 5.54, 6.11, 7.24);                                             // Wohnungstrennwand Nord (Nische)
+vWall(7.10, 7.24, 5.54, 6.88);                                             // Wohnungstrennwand hinter dem Einbauschrank
+// Einbauschrank in der Flur-Nische (raumhoch, weiße Fronten zum Flur)
+{
+  const x0 = 6.40, x1 = 7.10, y0 = 5.54, y1 = 6.88, n = 3, w = (y1 - y0) / n, split = 2.40;
+  aabb(x0 + 0.03, x1, y0, y1, 0, H, wallMats);                                 // Korpus
+  aabb(x0 + 0.06, x0 + 0.08, y0, y1, 0, 0.07, M.cut, { solid: false });        // Sockel (zurückgesetzt)
+  for (let i = 0; i < n; i++) {
+    const a = y0 + i * w + 0.002, b = y0 + (i + 1) * w - 0.002;
+    aabb(x0, x0 + 0.03, a, b, 0.075, split - 0.002, M.door, { solid: false });          // Tür
+    aabb(x0, x0 + 0.03, a, b, split + 0.002, H - 0.005, M.door, { solid: false });      // Aufsatz
+    const hy = i % 2 ? a + 0.04 : b - 0.04;
+    aabb(x0 - 0.012, x0, hy - 0.006, hy + 0.006, 0.95, 1.35, M.metal, { solid: false });   // Griff
+  }
+}
 hWall(4.01, 4.20, 6.11, 8.90);                                             // Bad | Treppe
 hWall(6.88, 7.32, 4.36, 8.90, [Door(4.93, 5.82)]);                          // Büro/Treppe Süd
 vWall(8.90, 9.39, 6.88, 7.32);
@@ -475,6 +566,8 @@ door([4.95, 7.10],  [5.80, 7.10],  [4.95, 7.95]);    // Büro (öffnet ins Büro
 
 // --- Einrichtung (per Button ein-/ausblendbar) --------------------------------------
 const furniture = new THREE.Group();
+const toyEle = { group: null, body: null, legs: [], ears: [] };   // laufender Spielzeugelefant
+const elePick = [];
 furniture.visible = false;   // Möbel starten ausgeblendet (Button „Möbel einblenden“)
 scene.add(furniture);
 {
@@ -799,20 +892,42 @@ function books(x0, x1, Y, h0, mats, { alongY = false } = {}) {   // stehende Bü
     mk(cg, W.sheer, P, 0, 0, 0, false);
     rod([1.30, 0.10, 2.56], [3.95, 0.10, 2.56], 0.012, F.chrome);
   }
-  // Spielzeug-Elefant (hellblau) vor dem Fenster, Blick nach Osten
+  // Spielzeug-Elefant (hellblau) vor dem Fenster, Blick nach Osten – anklickbar, läuft dann durch die Wohnung
   {
     const g = grp(3.05, 0.62, 90), E = W.eleph;
-    lsph(g, 0, 0.29, -0.02, 0.2, E).scale.set(0.75, 0.62, 1.25);
-    for (const sx of [-0.09, 0.09]) for (const sz of [-0.16, 0.13]) lc(g, sx, sz, 0.05, 0.075, 0, 0.26, E, 16);
-    lsph(g, 0, 0.36, 0.25, 0.12, E);
+    toyEle.group = g;
+    const body = new THREE.Group(); g.add(body); toyEle.body = body;   // alles oberhalb der Beine (wippt beim Laufen)
+    lsph(body, 0, 0.29, -0.02, 0.2, E).scale.set(0.75, 0.62, 1.25);   // Rumpf
+    // Beine in Drehpunkten an der Hüfte: rotation.x schwingt sie vor und zurück
+    // Diagonale Paare laufen gemeinsam (vorne links + hinten rechts gegen die anderen beiden)
+    for (const sx of [-0.09, 0.09]) for (const sz of [-0.16, 0.13]) {
+      const pv = new THREE.Group();
+      pv.position.set(sx, 0.26, sz);
+      g.add(pv);
+      lc(pv, 0, 0, 0.05, 0.075, -0.26, 0, E, 16);
+      toyEle.legs.push({ pv, off: (sx > 0) === (sz > 0) ? 0 : Math.PI });
+    }
+    lsph(body, 0, 0.36, 0.25, 0.12, E);                                   // Kopf
+    // Ohren in Drehpunkten vorne am Kopf: rotation.y klappt sie (zeigt die Lenkung)
     for (const sx of [-1, 1]) {
-      const ear = mk(new THREE.CylinderGeometry(0.15, 0.15, 0.015, 24), E, g, sx * 0.11, 0.37, 0.20);
-      ear.rotation.z = Math.PI / 2; ear.rotation.y = sx * 0.35; ear.scale.set(1, 1, 1.15);
+      const pv = new THREE.Group();
+      pv.position.set(sx * 0.13, 0.37, 0.30);
+      pv.rotation.y = sx * 0.35;
+      body.add(pv);
+      const ear = mk(new THREE.CylinderGeometry(0.15, 0.15, 0.015, 24), E, pv, 0, 0, -0.10);
+      ear.rotation.z = Math.PI / 2; ear.scale.set(1, 1, 1.15);
+      toyEle.ears.push({ pv, sx });
     }
     const trunk = new THREE.CatmullRomCurve3([[0, 0.32, 0.34], [0, 0.22, 0.42], [0, 0.10, 0.44], [0, 0.05, 0.40]].map(p => new THREE.Vector3(...p)));
-    mk(new THREE.TubeGeometry(trunk, 20, 0.035, 10), E, g, 0, 0, 0);
-    ltube(g, [0, 0.33, -0.26], [0, 0.20, -0.32], 0.012, E);
-    solid(g, -0.2, 0.2, -0.33, 0.47);
+    mk(new THREE.TubeGeometry(trunk, 20, 0.035, 10), E, body, 0, 0, 0);
+    ltube(body, [0, 0.33, -0.26], [0, 0.20, -0.32], 0.012, E);           // Schwanz
+    g.traverse(o => { if (o.isMesh) { o.userData.toy = true; elePick.push(o); } });
+    // Kollisionsbox wandert mit (Rundgang stößt gegen den Elefanten, wo er gerade steht)
+    toyEle.solid = { furn: true, dyn: () => {
+      const a = g.rotation.y, oz = 0.07;
+      return { cx: g.position.x + oz * Math.sin(a), cz: g.position.z + oz * Math.cos(a), hx: 0.2, hz: 0.40, a };
+    } };
+    solids.push(toyEle.solid);
   }
 
   // ---- Essplatz: Marmortisch Ø 1,20 auf Tulpenfuß, 4 Freischwinger ----
@@ -827,6 +942,30 @@ function books(x0, x1, Y, h0, mats, { alongY = false } = {}) {   // stehende Bü
   cescaChair(cx - d, cy - d, 45);     // NW
   cescaChair(cx + d, cy + d, -135);   // SO
   cescaChair(cx - d, cy + d, 135);    // SW
+  // Flur: Sitzbank passend zu den Freischwingern, an der Wand zwischen Wohnzimmer- und Schlafzimmertür
+  {
+    const g = grp(4.86, 4.76, 90), r = 0.011, C = F.chrome, hw = 0.50, sx0 = hw - 0.04;
+    for (const sx of [-sx0, sx0]) {
+      const pts = [[sx, 0.012, -0.17], [sx, 0.012, 0.13], [sx, 0.06, 0.19], [sx, 0.40, 0.18], [sx, 0.43, 0.13], [sx, 0.445, -0.15]];
+      for (let i = 0; i < pts.length - 1; i++) ltube(g, pts[i], pts[i + 1], r, C);
+      for (const p of pts) lsph(g, p[0], p[1], p[2], r, C, false);
+    }
+    ltube(g, [-sx0, 0.012, -0.17], [sx0, 0.012, -0.17], r, C);
+    ls(g, -hw, hw, 0.45, 0.48, -0.18, 0.19, W.black, 0.015);              // Sitzrahmen
+    lb(g, -sx0, sx0, 0.48, 0.483, -0.14, 0.15, std(0xffffff, 0.8, { map: texFor(caneTex, 2 * sx0, 0.29, 0.13) }), false);   // Geflecht
+    solid(g, -hw, hw, -0.19, 0.20);
+  }
+  // Ovaler Spiegel mit schwarzem Rahmen über der Bank
+  {
+    const X = 4.655, Y = 4.76, hc = 1.50, rx = 0.28, ry = 0.40, fw = 0.03;
+    const fr = new THREE.Shape(); fr.absellipse(0, 0, rx + fw, ry + fw, 0, Math.PI * 2, false);
+    fr.holes.push(new THREE.Path().absellipse(0, 0, rx, ry, 0, Math.PI * 2, true));
+    const f = mk(new THREE.ExtrudeGeometry(fr, { depth: 0.03, bevelEnabled: false, curveSegments: 48 }), W.black, P, wx(X), hc, wz(Y));
+    f.rotation.y = Math.PI / 2;
+    const gl = new THREE.Shape(); gl.absellipse(0, 0, rx + 0.005, ry + 0.005, 0, Math.PI * 2, false);
+    const m = mk(new THREE.ShapeGeometry(gl, 48), F.mirror, P, wx(X + 0.015), hc, wz(Y), false);
+    m.rotation.y = Math.PI / 2;
+  }
   for (const [x, y, hc] of [[cx - 0.16, cy - 0.06, 0.95], [cx - 0.04, cy + 0.08, 0.90]]) {   // Kerzenständer
     pc(x, y, 0.035, 0.035, 0.75, 0.76, W.black, 16);
     pc(x, y, 0.007, 0.007, 0.76, hc, W.black, 8);
@@ -918,8 +1057,18 @@ function books(x0, x1, Y, h0, mats, { alongY = false } = {}) {   // stehende Bü
     }
   });
   const K = {
-    front: std(0xf1efea, 0.55),
-    gap: std(0x9a968f, 0.9),
+    front: std(0xffffff, 0.5, { map: canvasTexture(256, 512, (g, w, h) => {   // Nussbaum
+      g.fillStyle = '#6a4630'; g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 70; i++) {
+        const x = rand() * w, amp = 2 + rand() * 6, ph = rand() * 6;
+        g.strokeStyle = rand() > 0.45 ? `rgba(40,22,12,${0.10 + rand() * 0.22})` : `rgba(150,105,70,${0.08 + rand() * 0.15})`;
+        g.lineWidth = 0.8 + rand() * 2.5;
+        g.beginPath(); g.moveTo(x, 0);
+        for (let y = 12; y <= h; y += 12) g.lineTo(x + Math.sin(y * 0.02 + ph) * amp, y);
+        g.stroke();
+      }
+    }) }),
+    gap: std(0x2e2018, 0.9),
     glass: std(0x101112, 0.15, { metalness: 0.2 }),
     sink: std(0xc9ccd0, 0.3, { metalness: 0.7 }),
     bowl: std(0x8e9196, 0.4, { metalness: 0.6 }),
@@ -1023,11 +1172,30 @@ function books(x0, x1, Y, h0, mats, { alongY = false } = {}) {   // stehende Bü
   for (const x of [7.10, 7.63]) pb(x, x + 0.02, 3.985, 4.005, 0.45, 1.55, F.chrome);
 }
 
-// --- Schlafen: Bett 180 × 200 an der Westwand, Nachttische, raumhoher Schrank an der Ostwand ---
-rugRect(1.40, 2.75, 7.40, 9.60, rugBedTex);
-bed(0.0, 8.50, 90, 1.8, 2.0, { head: F.beige, throwMat: F.sage });
-nightstand(0.22, 7.30, 90);
-nightstand(0.22, 9.70, 90);
+// --- Schlafen: Bett 180 × 200 mittig an der Westwand, Nachttische, Regal BYÅKORRE an der Nordwand,
+//     raumhoher Schrank an der Ostwand ---------------------------------------------------------
+bed(0.0, 8.085, 90, 1.8, 2.0, { head: F.beige, throwMat: F.sage });
+nightstand(0.22, 6.875, 90);
+nightstand(0.22, 9.295, 90);
+// IKEA BYÅKORRE (170 × 32 × 157 cm), komplett weiß: Leiter-Seitenrahmen aus Draht, 4 Böden, offen
+{
+  const x0 = 1.33, x1 = 3.03, y0 = 5.63, y1 = 5.95, top = 1.57, r = 0.0065;
+  const wht = std(0xf4f4f1, 0.45), wire = std(0xf0f0ec, 0.35, { metalness: 0.3 });
+  for (const x of [x0 + 0.01, x1 - 0.01]) {
+    for (const y of [y0 + 0.015, y1 - 0.015]) {
+      pc(x, y, r, r, 0.02, top, wire, 8);                                // Pfosten
+      pc(x, y, 0.014, 0.014, 0, 0.02, wire, 10);                          // Stellfuß
+    }
+    for (let h = 0.10; h < top; h += 0.10) pb(x - r, x + r, y0 + 0.015, y1 - 0.015, h - r, h + r, wire, false);   // Sprossen
+  }
+  for (const h of [0.10, 0.58, 1.06, top - 0.02]) pb(x0 + 0.02, x1 - 0.02, y0 + 0.005, y1 - 0.005, h, h + 0.02, wht);   // Böden
+  psolid(x0, x1, y0, y1);
+  const mats = [F.greyD, F.beige, F.sage, F.white, F.toys[5]];
+  books(x0 + 0.10, x0 + 0.55, 5.80, 0.60, mats);
+  books(x1 - 0.60, x1 - 0.20, 5.80, 1.08, mats);
+  pb(x1 - 0.55, x1 - 0.15, 5.68, 5.92, 0.12, 0.40, std(0xd9c7a5, 0.95));   // Korb unten
+  pc(x0 + 0.35, 5.79, 0.06, 0.05, 1.08, 1.30, F.terra, 20);                 // Vase
+}
 {
   const x0 = 3.78, x1 = 4.355, y0 = 7.55, y1 = 10.545, n = 5, top = H - 0.004;
   pb(x0 + 0.05, x1, y0, y1, 0, 0.08, F.black);
@@ -1043,22 +1211,22 @@ nightstand(0.22, 9.70, 90);
   psolid(x0, x1, y0, y1);
 }
 armchair(1.40, 10.08, 165, std(0x1f2d5a, 0.95), { high: true });   // dunkelblau wie das Sofa, vor dem Fenster
-plant(0.40, 10.20, 0.9);
 
-// --- Büro: Schreibtisch an der Westwand, Bürostuhl, Tagesbett, Regal -------------------------
+// --- Büro: weißer Schreibtisch (80 cm) an der Ostwand, beiges Sofa an der Südwand (gegenüber der Tür),
+//     Monstera rechts vom Sofa, weiße Kommode (IKEA Malm, 3 Schubladen) an der Westwand, Regal -------
 {
-  const x0 = 4.55, x1 = 5.30, y0 = 8.60, y1 = 10.20;
-  pb(x0, x1, y0, y1, 0.72, 0.75, F.oak);
-  for (const x of [x0 + 0.03, x1 - 0.06]) for (const y of [y0 + 0.03, y1 - 0.06]) pb(x, x + 0.03, y, y + 0.03, 0, 0.72, F.white);
+  const x0 = 6.52, x1 = 7.27, y0 = 8.35, y1 = 9.15, cy = (y0 + y1) / 2, white = std(0xf6f6f3, 0.45);
+  pb(x0, x1, y0, y1, 0.72, 0.75, white);
+  for (const x of [x0 + 0.03, x1 - 0.06]) for (const y of [y0 + 0.03, y1 - 0.06]) pb(x, x + 0.03, y, y + 0.03, 0, 0.72, white);
   psolid(x0, x1, y0, y1);
-  pb(4.60, 4.64, 9.10, 9.70, 1.02, 1.36, F.black);                      // Monitor
-  pb(4.64, 4.66, 9.38, 9.42, 0.75, 1.10, F.black);
-  pb(4.62, 4.80, 9.28, 9.52, 0.75, 0.76, F.black);
-  pb(4.90, 5.05, 9.15, 9.65, 0.75, 0.765, F.greyD);                     // Tastatur
-  tableLamp(P, wx(4.75), wz(8.80), 0.75);
-  books(9.85, 10.10, 4.70, 0.75, [F.toys[2], F.sage, F.toys[5], F.mustard], { alongY: true });
-  // Bürostuhl (Blick nach Westen zum Schreibtisch)
-  const g = grp(5.62, 9.40, -90);
+  pb(7.18, 7.22, cy - 0.28, cy + 0.28, 1.02, 1.34, F.black);            // Monitor
+  pb(7.16, 7.18, cy - 0.02, cy + 0.02, 0.75, 1.10, F.black);
+  pb(7.02, 7.20, cy - 0.12, cy + 0.12, 0.75, 0.76, F.black);
+  pb(6.77, 6.92, cy - 0.22, cy + 0.22, 0.75, 0.765, F.greyD);           // Tastatur
+  tableLamp(P, wx(7.10), wz(y0 + 0.12), 0.75);
+  books(y1 - 0.20, y1 - 0.04, 7.12, 0.75, [F.toys[2], F.sage, F.toys[5]], { alongY: true });
+  // Bürostuhl (Blick nach Osten zum Schreibtisch)
+  const g = grp(6.20, 8.75, 90);
   for (let i = 0; i < 5; i++) {
     const a = i * Math.PI * 2 / 5, arm = new THREE.Group(); arm.rotation.y = a; g.add(arm);
     lb(arm, -0.015, 0.015, 0.05, 0.08, 0, 0.3, F.black);
@@ -1070,23 +1238,69 @@ plant(0.40, 10.20, 0.9);
   lb(g, -0.02, 0.02, 0.5, 0.65, -0.25, -0.22, F.black);
   solid(g, -0.3, 0.3, -0.3, 0.3);
 }
-// Tagesbett an der Ostwand (unter dem Fenster)
+// Beiges Sofa an der Südwand unter dem ovalen Fenster (Blick nach Norden zur Tür)
 {
-  const x0 = 6.40, x1 = 7.26, y0 = 7.85, y1 = 9.95;
-  pb(x0, x1, y0, y1, 0.08, 0.30, F.oak);
-  for (const x of [x0 + 0.04, x1 - 0.08]) for (const y of [y0 + 0.04, y1 - 0.08]) pb(x, x + 0.04, y, y + 0.04, 0, 0.08, F.oak);
-  ps(x0 + 0.02, x1 - 0.02, y0 + 0.02, y1 - 0.02, 0.30, 0.48, F.linen, 0.05);
-  ps(x0 + 0.04, x1, y0 + 0.4, y1 - 0.05, 0.40, 0.50, F.blue, 0.04);     // Tagesdecke
-  ps(7.02, 7.24, y0 + 0.05, y1 - 0.05, 0.46, 0.85, F.greyD, 0.06);      // Rückenpolster
-  pillow(6.95, 8.35, -90, 0.48, F.mustard);
-  pillow(6.95, 9.45, -90, 0.48, F.sage);
+  const S = std(0xd8c9ae, 0.95), x0 = 5.32, x1 = 7.12, y0 = 10.40, y1 = 11.26;
+  for (const [x, y] of [[x0 + 0.06, y0 + 0.06], [x1 - 0.06, y0 + 0.06], [x0 + 0.06, y1 - 0.06], [x1 - 0.06, y1 - 0.06]]) pc(x, y, 0.025, 0.02, 0, 0.08, F.oak, 10);
+  ps(x0, x1, y0, y1, 0.08, 0.40, S, 0.04);                             // Sockel
+  ps(x0, x1, y1 - 0.22, y1, 0.38, 0.82, S, 0.06);                      // Rücken
+  ps(x0, x0 + 0.18, y0, y1, 0.38, 0.62, S, 0.06);                      // Armlehne West
+  ps(x1 - 0.18, x1, y0, y1, 0.38, 0.62, S, 0.06);                      // Armlehne Ost
+  for (const [a, b] of [[x0 + 0.19, (x0 + x1) / 2 - 0.005], [(x0 + x1) / 2 + 0.005, x1 - 0.19]]) {
+    ps(a, b, y0 + 0.02, y1 - 0.23, 0.40, 0.52, S, 0.05);               // Sitzkissen
+    ps(a, b, y1 - 0.42, y1 - 0.22, 0.50, 0.88, S, 0.07);               // Rückenkissen
+  }
   psolid(x0, x1, y0, y1);
+  const P2 = std(0xe6dccb, 0.95);                                      // Kissen in hellerem Beige
+  pillow(x0 + 0.32, 10.80, 180, 0.52, P2);
+  pillow(x1 - 0.32, 10.80, 180, 0.52, P2);
 }
-// Beistelltisch (wie im Plan)
-pc(6.08, 8.53, 0.19, 0.19, 0.48, 0.51, F.oak, 32);
-pc(6.08, 8.53, 0.02, 0.02, 0, 0.48, F.black, 10);
-pc(6.08, 8.53, 0.14, 0.14, 0, 0.02, F.black, 24);
-psolid(5.89, 6.27, 8.34, 8.72);
+// Monstera rechts vom Sofa (vom Raum aus gesehen), in der Südwest-Ecke
+{
+  const g = grp(4.92, 10.82, 0);
+  lc(g, 0, 0, 0.19, 0.15, 0, 0.36, F.pot, 28);
+  lc(g, 0, 0, 0.175, 0.175, 0.33, 0.34, F.soil, 28, false);
+  // Blatt: herzförmig mit Löchern (Fensterblatt), Spitze zeigt in lokale +y
+  const ls_ = new THREE.Shape();
+  ls_.moveTo(0, 0);
+  ls_.bezierCurveTo(-0.10, -0.05, -0.24, 0.02, -0.23, 0.18);
+  ls_.bezierCurveTo(-0.22, 0.33, -0.10, 0.45, 0, 0.48);
+  ls_.bezierCurveTo(0.10, 0.45, 0.22, 0.33, 0.23, 0.18);
+  ls_.bezierCurveTo(0.24, 0.02, 0.10, -0.05, 0, 0);
+  for (const sx of [-1, 1]) for (let k = 0; k < 3; k++)
+    ls_.holes.push(new THREE.Path().absellipse(sx * (0.11 + k * 0.012), 0.10 + k * 0.10, 0.055, 0.011, 0, Math.PI * 2, true, sx * (0.35 + k * 0.15)));
+  const leafGeo = new THREE.ShapeGeometry(ls_, 12);
+  const leafMats = [std(0x2f5d34, 0.7, { side: THREE.DoubleSide }), std(0x3b6e3c, 0.7, { side: THREE.DoubleSide })];
+  for (let i = 0; i < 10; i++) {
+    const az = i * 2 * Math.PI / 10 + (rand() - 0.5) * 0.6, tilt = 0.25 + rand() * 0.45, L = 0.35 + rand() * 0.55, droop = 0.15 + rand() * 0.5, sc = 0.75 + rand() * 0.45;
+    const base = new THREE.Group(); base.position.set(0, 0.34, 0); base.rotation.y = -az; g.add(base);
+    const t = new THREE.Group(); t.rotation.z = -tilt; base.add(t);
+    lc(t, 0, 0, 0.007, 0.011, 0, L, F.leaf, 8);                          // Stiel
+    const leaf = mk(leafGeo, leafMats[i % 2], t, 0, L, 0);
+    leaf.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(   // Blattbreite quer, Spitze nach außen und leicht hängend
+      new THREE.Vector3(0, 0, 1), new THREE.Vector3(Math.cos(droop), -Math.sin(droop), 0),
+      new THREE.Vector3(Math.sin(droop), Math.cos(droop), 0)));
+    leaf.scale.setScalar(sc);
+  }
+  solid(g, -0.2, 0.2, -0.2, 0.2);
+}
+// Weiße Kommode IKEA Malm mit 3 Schubladen (80 × 48 × 78 cm) an der Westwand, Fronten nach Osten
+{
+  const x0 = 4.55, x1 = 5.03, y0 = 9.00, y1 = 9.80, top = 0.78, base = 0.04;
+  const white = std(0xf6f6f3, 0.45), groove = std(0xcfcfca, 0.6);
+  pb(x0, x1 - 0.018, y0, y1, 0, top, white);                             // Korpus
+  pb(x0, x1 - 0.015, y0 + 0.01, y1 - 0.01, 0, base, groove, false);       // Sockelschatten
+  const rows = 3, rh = (top - 0.03 - base) / rows;
+  for (let r = 0; r < rows; r++) {
+    const a = y0 + 0.003, b = y1 - 0.003, h0 = base + r * rh + 0.003, h1 = base + (r + 1) * rh - 0.003;
+    pb(x1 - 0.018, x1, a, b, h0, h1, white);                             // Schubladenfront
+    pb(x1 - 0.006, x1 + 0.0005, a + 0.01, b - 0.01, h1 - 0.022, h1 - 0.012, groove, false);   // Griffmulde oben
+  }
+  psolid(x0, x1, y0, y1);
+  // Deko auf der Kommode
+  pc(4.80, 9.15, 0.06, 0.05, top, top + 0.24, F.terra, 20);
+  books(9.33, 9.52, 4.75, top, [F.toys[2], F.sage, F.greyD], { alongY: true });
+}
 // Regal an der Nordwand
 {
   const x0 = 5.95, x1 = 7.20, y0 = 7.32, y1 = 7.66, t = 0.025;
@@ -1094,25 +1308,9 @@ psolid(5.89, 6.27, 8.34, 8.72);
   for (const h of [0.05, 0.45, 0.85, 1.25, 1.65, 1.95 - t]) pb(x0, x1, y0, y1, h, h + t, F.oak);
   const mats = [F.toys[2], F.sage, F.toys[5], F.mustard, F.terra, F.blue, F.greyD];
   for (const h of [0.075, 0.475, 0.875, 1.275]) { books(x0 + 0.04, x0 + 0.55, 7.50, h, mats); books(x0 + 0.68, x1 - 0.12, 7.50, h, mats); }
-  plant(x1 - 0.25, 7.50, 0.35, 1.675, false);
   psolid(x0, x1, y0, y1);
 }
-plant(6.95, 10.95, 1.0);
 
-// --- Treppe: Garderobenschrank neben der Treppenöffnung -----------------------------------
-{
-  const x0 = 6.40, x1 = 7.06, y0 = 5.54, y1 = 6.84, n = 2, top = 2.40;
-  pb(x0 + 0.05, x1, y0, y1, 0, 0.08, F.black);
-  pb(x0 + 0.03, x1, y0, y1, 0.08, top, F.white);
-  const w = (y1 - y0) / n;
-  for (let i = 0; i < n; i++) {   // Fronten zum Flur (Westen)
-    const a = y0 + i * w + 0.002, b = y0 + (i + 1) * w - 0.002;
-    pb(x0, x0 + 0.03, a, b, 0.085, top - 0.005, F.oakFront);
-    const hy = i % 2 ? a + 0.03 : b - 0.03;
-    pb(x0 - 0.005, x0, hy - 0.012, hy + 0.012, 0.9, 1.3, F.black, false);
-  }
-  psolid(x0, x1, y0, y1);
-}
 }
 
 // --- Raum-Labels -----------------------------------------------------------------
@@ -1162,7 +1360,12 @@ const plc = new PointerLockControls(camera, renderer.domElement);
 const overlay = document.getElementById('walkOverlay');
 const crosshair = document.getElementById('crosshair');
 const keys = {};
-addEventListener('keydown', e => { keys[e.code] = true; if (mode === 'walk' && e.code.startsWith('Arrow')) e.preventDefault(); });
+addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if ((mode === 'walk' || mode === 'ele') && e.code.startsWith('Arrow')) e.preventDefault();
+  if (mode === 'ele' && e.code === 'Space') e.preventDefault();
+  if (mode === 'ele' && e.code === 'Escape') setMode(eleReturn);
+});
 addEventListener('keyup', e => { keys[e.code] = false; });
 // Vollbild für den Rundgang (Fehler/fehlende Unterstützung still ignorieren)
 const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement;
@@ -1188,6 +1391,7 @@ function applyTouch() {
   isTouch = touchMQ.matches;
   document.querySelector('#modes [data-mode="walk"]').hidden = isTouch;
   if (isTouch && mode === 'walk') setMode('orbit');
+  updateHelp();
 }
 touchMQ.addEventListener?.('change', applyTouch);
 overlay.addEventListener('click', () => { plc.lock(); enterFullscreen(); });
@@ -1195,10 +1399,11 @@ plc.addEventListener('lock', () => { overlay.style.display = 'none'; crosshair.s
 plc.addEventListener('unlock', () => { if (mode === 'walk') overlay.style.display = 'flex'; crosshair.style.display = 'none'; });
 
 const RADIUS = 0.22, EYE = 1.65;
-function collide(p) {
+// Schiebt p aus allen Hindernissen heraus (Abstand r); skip = Hindernis, das ignoriert wird
+function collide(p, r = RADIUS, skip = null) {
   for (let it = 0; it < 3; it++) {
     for (const s0 of solids) {
-      if (s0.furn && !furniture.visible) continue;
+      if (s0 === skip || (s0.furn && !furniture.visible)) continue;
       const s = s0.door ? doorBox(s0.door) : s0.dyn ? s0.dyn() : s0;
       const dx = p.x - s.cx, dz = p.z - s.cz, c = Math.cos(s.a), sn = Math.sin(s.a);
       const lx = dx * c - dz * sn, lz = dx * sn + dz * c;
@@ -1206,12 +1411,12 @@ function collide(p) {
       let ex = lx - qx, ez = lz - qz, d = Math.hypot(ex, ez);
       let px, pz;
       if (d > 1e-6) {
-        if (d >= RADIUS) continue;
-        px = ex / d * (RADIUS - d); pz = ez / d * (RADIUS - d);
+        if (d >= r) continue;
+        px = ex / d * (r - d); pz = ez / d * (r - d);
       } else {
         const ox = s.hx - Math.abs(lx), oz = s.hz - Math.abs(lz);
-        if (ox < oz) { px = Math.sign(lx || 1) * (ox + RADIUS); pz = 0; }
-        else { px = 0; pz = Math.sign(lz || 1) * (oz + RADIUS); }
+        if (ox < oz) { px = Math.sign(lx || 1) * (ox + r); pz = 0; }
+        else { px = 0; pz = Math.sign(lz || 1) * (oz + r); }
       }
       p.x += px * c + pz * sn;
       p.z += -px * sn + pz * c;
@@ -1234,8 +1439,179 @@ function walkStep(dt) {
   camera.position.y = EYE;
 }
 
+// --- Spielzeugelefant laufen lassen (Verfolgerkamera) ---------------------------------
+// Liegt der Punkt p näher als r an einem Hindernis?
+function penetrates(p, r, skip = null) {
+  for (const s0 of solids) {
+    if (s0 === skip || (s0.furn && !furniture.visible)) continue;
+    const s = s0.door ? doorBox(s0.door) : s0.dyn ? s0.dyn() : s0;
+    const dx = p.x - s.cx, dz = p.z - s.cz, c = Math.cos(s.a), sn = Math.sin(s.a);
+    const lx = dx * c - dz * sn, lz = dx * sn + dz * c;
+    const qx = Math.max(-s.hx, Math.min(s.hx, lx)), qz = Math.max(-s.hz, Math.min(s.hz, lz));
+    if (Math.hypot(lx - qx, lz - qz) < r) return true;
+  }
+  return false;
+}
+const ELE = {
+  acc: 2.0, brake: 5.0, handbrake: 8.0, drag: 1.5,   // m/s²
+  maxF: 1.6, maxR: 0.6,                               // m/s vorwärts / rückwärts
+  turn: 2.4, r: 0.19, stride: 0.42,                   // rad/s, Kollisionsradius, Schrittlänge
+  front: 0.24, back: 0.12,                            // Kollisionskreise vor/hinter der Mitte
+  legAmp: 0.42, earBase: 0.35, earSteer: 0.6,         // Beinausschlag, Ohrstellung, Ohr-Lenkausschlag
+  camDist: 1.2, camH: 0.6, fov: 55, fovMax: 64,
+};
+const ele = { speed: 0, steer: 0, phase: 0, amp: 0, camYaw: 0, camDist: ELE.camDist };
+const hud = document.getElementById('hud');
+const eleFwd = new THREE.Vector3(), elePrev = new THREE.Vector3(), camDir = new THREE.Vector3(), camTry = new THREE.Vector3(), lookAt = new THREE.Vector3(), tmpP = new THREE.Vector3();
+const wrapAngle = a => Math.atan2(Math.sin(a), Math.cos(a));
+// Touch-Steuerung: Lauf-Button, Lenken über Neigung (Gyroskop), Lenk-Buttons als Ausweichlösung
+const touchCtl = { gas: false, steer: 0, btnSteer: 0 };
+const tilt = { zero: null, n: 0, got: false, timer: 0, on: false };
+const eleOverlay = document.getElementById('eleOverlay');
+// Neigung wie ein Lenkrad: Richtung der Schwerkraft in Bildschirm-Koordinaten (funktioniert hoch und quer)
+function onTilt(e) {
+  if (e.beta == null || e.gamma == null) return;
+  const b = THREE.MathUtils.degToRad(e.beta), g = THREE.MathUtils.degToRad(e.gamma);
+  const gx = Math.cos(b) * Math.sin(g), gy = -Math.sin(b);               // Schwerkraft im Geräte-System
+  const th = THREE.MathUtils.degToRad(screen.orientation?.angle ?? window.orientation ?? 0);
+  const sx = gx * Math.cos(th) - gy * Math.sin(th), sy = gx * Math.sin(th) + gy * Math.cos(th);
+  if (Math.hypot(sx, sy) < 0.2) return;                                 // Handy liegt fast flach: Lenkung nicht ablesbar
+  const roll = Math.atan2(sx, -sy);                                     // > 0 = im Uhrzeigersinn gekippt (rechts)
+  if (!tilt.got) { tilt.got = true; document.body.classList.remove('steer-buttons'); }
+  if (tilt.n < 8) { tilt.zero = tilt.n ? tilt.zero + wrapAngle(roll - tilt.zero) / (tilt.n + 1) : roll; tilt.n++; }   // Nullstellung = Haltung beim Start
+  const d = THREE.MathUtils.radToDeg(wrapAngle(roll - tilt.zero));
+  const mag = Math.min(1, Math.max(0, (Math.abs(d) - 3) / 22));        // Totzone ±3°, voller Einschlag bei ±25°
+  touchCtl.steer = -Math.sign(d) * mag;                                 // links kippen = links lenken
+}
+function recalibrateTilt() { tilt.zero = null; tilt.n = 0; }
+screen.orientation?.addEventListener?.('change', recalibrateTilt);
+addEventListener('orientationchange', recalibrateTilt);
+async function startTilt() {
+  let ok = true;
+  try {
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function')
+      ok = (await DeviceOrientationEvent.requestPermission()) === 'granted';   // iPhone/iPad: Erlaubnis nötig
+  } catch (e) { ok = false; }
+  if (mode !== 'ele') return;
+  recalibrateTilt();
+  tilt.got = false;
+  if (ok && typeof DeviceOrientationEvent !== 'undefined') { addEventListener('deviceorientation', onTilt); tilt.on = true; }
+  clearTimeout(tilt.timer);
+  tilt.timer = setTimeout(() => { if (mode === 'ele' && !tilt.got) document.body.classList.add('steer-buttons'); }, ok ? 1000 : 0);
+}
+function stopTouchDrive() {
+  if (tilt.on) { removeEventListener('deviceorientation', onTilt); tilt.on = false; }
+  clearTimeout(tilt.timer);
+  touchCtl.gas = false; touchCtl.steer = 0; touchCtl.btnSteer = 0;
+  document.querySelectorAll('.drive-btn.down').forEach(b => b.classList.remove('down'));
+  eleOverlay.style.display = 'none';
+  document.body.classList.remove('driving', 'steer-buttons');
+}
+let eleOverlayAt = 0;
+eleOverlay.addEventListener('click', () => {
+  if (performance.now() - eleOverlayAt < 450) return;   // Geister-Klick vom Antippen des Elefanten ignorieren
+  eleOverlay.style.display = 'none';
+  startTilt();          // zuerst: die Erlaubnis-Abfrage muss direkt aus dem Tipp kommen
+  enterFullscreen();
+});
+// Gedrückt-halten-Buttons (mehrere Finger gleichzeitig möglich)
+function holdButton(el, onChange) {
+  const set = (on, e) => {
+    el.classList.toggle('down', on);
+    onChange(on);
+    if (on && e) try { el.setPointerCapture(e.pointerId); } catch (_) {}
+  };
+  el.addEventListener('pointerdown', e => { e.preventDefault(); set(true, e); });
+  for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) el.addEventListener(t, () => set(false));
+  el.addEventListener('contextmenu', e => e.preventDefault());
+}
+holdButton(document.getElementById('btnGas'), on => { touchCtl.gas = on; });
+holdButton(document.getElementById('btnSteerL'), on => { touchCtl.btnSteer = on ? 1 : (touchCtl.btnSteer === 1 ? 0 : touchCtl.btnSteer); });
+holdButton(document.getElementById('btnSteerR'), on => { touchCtl.btnSteer = on ? -1 : (touchCtl.btnSteer === -1 ? 0 : touchCtl.btnSteer); });
+document.getElementById('btnEleExit').addEventListener('click', () => setMode(eleReturn));
+// Langer Körper: Kollision über zwei Kreise (Kopf und Hinterteil), Verschiebung gilt für den ganzen Elefanten
+function collideEle(g) {
+  for (let k = 0; k < 2; k++) for (const off of [ELE.front, -ELE.back]) {
+    tmpP.set(g.position.x + eleFwd.x * off, 0, g.position.z + eleFwd.z * off);
+    const bx = tmpP.x, bz = tmpP.z;
+    collide(tmpP, ELE.r, toyEle.solid);
+    g.position.x += tmpP.x - bx;
+    g.position.z += tmpP.z - bz;
+  }
+}
+function eleStep(dt) {
+  const g = toyEle.group;
+  const up = keys.KeyW || keys.ArrowUp || touchCtl.gas, down = keys.KeyS || keys.ArrowDown;   // Touch: nur vorwärts
+  const keySteer = (keys.KeyA || keys.ArrowLeft ? 1 : 0) - (keys.KeyD || keys.ArrowRight ? 1 : 0);
+  const steerIn = Math.max(-1, Math.min(1, keySteer + touchCtl.steer + touchCtl.btnSteer));
+  // Losgehen, Bremsen, Rückwärts, Auslaufen
+  let v = ele.speed;
+  if (keys.Space) v -= Math.sign(v) * Math.min(Math.abs(v), ELE.handbrake * dt);
+  else if (up && !down) v += (v < 0 ? ELE.brake : ELE.acc) * dt;
+  else if (down && !up) v -= (v > 0 ? ELE.brake : ELE.acc * 0.8) * dt;
+  else v -= Math.sign(v) * Math.min(Math.abs(v), ELE.drag * dt);
+  v = Math.max(-ELE.maxR, Math.min(ELE.maxF, v));
+  // Lenken: im Stand kein Drehen, bei hohem Tempo etwas weniger, rückwärts umgekehrt
+  ele.steer += (steerIn - ele.steer) * (1 - Math.exp(-dt * 10));
+  const grip = Math.min(1, Math.abs(v) / 0.3) * (1 - 0.35 * Math.abs(v) / ELE.maxF);
+  g.rotation.y += ele.steer * ELE.turn * grip * Math.sign(v) * dt;
+  // Bewegen und an Wänden/Möbeln/Türen abprallen
+  eleFwd.set(Math.sin(g.rotation.y), 0, Math.cos(g.rotation.y));
+  elePrev.copy(g.position);
+  g.position.addScaledVector(eleFwd, v * dt);
+  collideEle(g);
+  g.position.y = 0;
+  if (Math.abs(v) > 1e-4) {
+    const along = (g.position.x - elePrev.x) * eleFwd.x + (g.position.z - elePrev.z) * eleFwd.z;
+    const ratio = along / (v * dt);
+    if (ratio < 0.3 && Math.abs(v) > 0.8) v = -v * 0.2;                        // frontal: kleiner Abpraller
+    else if (ratio < 0.999) v *= Math.pow(Math.max(0, ratio), 60 * dt * 0.25); // schräg: an der Wand entlangschrammen, Tempo sinkt
+  }
+  ele.speed = v;
+  animateEle(dt);
+  // Verfolgerkamera: folgt der Laufrichtung weich, rückt vor Wänden näher an den Elefanten
+  ele.camYaw += wrapAngle(g.rotation.y - ele.camYaw) * (1 - Math.exp(-dt * 5));
+  updateEleCamera(dt);
+  hud.firstChild.nodeValue = String(Math.round(Math.abs(v) * 3.6 * 10) / 10).replace('.', ',');
+}
+// Beine schwingen passend zum Tempo (diagonale Paare), Körper wippt, Ohren zeigen die Lenkung
+function animateEle(dt) {
+  const v = ele.speed;
+  ele.phase += v * dt / ELE.stride * 2 * Math.PI;              // rückwärts läuft die Phase rückwärts
+  const target = ELE.legAmp * Math.min(1, Math.abs(v) / 0.5);
+  ele.amp += (target - ele.amp) * (1 - Math.exp(-dt * 8));     // im Stand weich zurück in die Grundstellung
+  for (const L of toyEle.legs) L.pv.rotation.x = ele.amp * Math.sin(ele.phase + L.off);
+  toyEle.body.position.y = 0.012 * (ele.amp / ELE.legAmp) * Math.abs(Math.sin(ele.phase));
+  // Links lenken: linkes Ohr klappt nach außen, rechtes legt sich an (und umgekehrt)
+  for (const E of toyEle.ears) {
+    let a = E.sx * ELE.earBase - ele.steer * ELE.earSteer;
+    a = E.sx > 0 ? Math.min(a, ELE.earBase + 0.1) : Math.max(a, -ELE.earBase - 0.1);
+    E.pv.rotation.y = a;
+  }
+}
+function updateEleCamera(dt) {
+  const g = toyEle.group;
+  camDir.set(Math.sin(ele.camYaw), 0, Math.cos(ele.camYaw));
+  let free = ELE.camDist;
+  for (let i = 1; i <= 12; i++) {
+    const d = ELE.camDist * i / 12;
+    camTry.copy(g.position).addScaledVector(camDir, -d);
+    if (penetrates(camTry, 0.05, toyEle.solid)) { free = ELE.camDist * (i - 1) / 12; break; }
+  }
+  ele.camDist = free < ele.camDist || dt === 0 ? free : ele.camDist + (free - ele.camDist) * (1 - Math.exp(-dt * 3));
+  camera.position.copy(g.position).addScaledVector(camDir, -ele.camDist);
+  camera.position.y = ELE.camH * (0.55 + 0.45 * ele.camDist / ELE.camDist);
+  eleFwd.set(Math.sin(g.rotation.y), 0, Math.cos(g.rotation.y));
+  lookAt.copy(g.position).addScaledVector(eleFwd, 0.3);
+  lookAt.y = 0.3;
+  camera.lookAt(lookAt);
+  const base = camera.aspect < 1 ? 70 : ELE.fov;   // Hochformat: weiterer Blickwinkel
+  const fov = base + (ELE.fovMax - ELE.fov) * Math.max(0, ele.speed) / ELE.maxF;
+  if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
+}
+
 // --- Modi & UI ---------------------------------------------------------------------
-let mode = 'orbit', tween = null, ceilingBeforeWalk = false, orbitSaved = null;
+let mode = 'orbit', tween = null, ceilingBeforeWalk = false, orbitSaved = null, eleReturn = 'orbit';
 const chkCeil = document.getElementById('chkCeil');
 const chkLabels = document.getElementById('chkLabels');
 const help = document.getElementById('help');
@@ -1243,7 +1619,12 @@ const HELP = {
   orbit: 'Linke Maustaste: drehen · Rechte Maustaste: verschieben · Mausrad: zoomen · Klick auf Tür: öffnen/schließen',
   top: 'Linke Maustaste: drehen · Rechte Maustaste: verschieben · Mausrad: zoomen · Klick auf Tür: öffnen/schließen',
   walk: 'Rundgang: W A S D gehen · Maus umsehen · Klick oder E auf Tür: öffnen/schließen · Esc Pause · „3D“ beendet',
+  ele: 'Spielzeugelefant: W / ↑ laufen · S / ↓ bremsen/rückwärts · A D / ← → lenken · Leertaste stehen bleiben · Klick auf Tür: öffnen/schließen · Esc beenden',
 };
+function updateHelp() {
+  const eleHint = (mode === 'orbit' || mode === 'top') && furniture.visible ? (isTouch ? ' · Tippe auf den Spielzeugelefanten: laufen' : ' · Klick auf den Spielzeugelefanten: laufen') : '';
+  help.textContent = HELP[mode] + eleHint;
+}
 function flyTo(pos, target, dur = 1.0) {
   tween = { t: 0, dur, p0: camera.position.clone(), p1: pos.clone(), t0: orbit.target.clone(), t1: target.clone() };
 }
@@ -1252,7 +1633,22 @@ function setCeiling(v) { ceiling.visible = v; chkCeil.checked = v; }
 function setMode(m) {
   if (m === mode && m !== 'top') return;
   if (m === 'walk' && isTouch) return;
+  if (m === 'ele' && (!furniture.visible || !toyEle.group)) return;
   const prev = mode;
+  if (prev === 'ele' && m !== 'ele') {
+    hud.style.display = 'none';
+    if (document.body.classList.contains('driving')) exitFullscreen();
+    stopTouchDrive();
+    setCeiling(ceilingBeforeWalk);
+    labelRenderer.domElement.style.display = chkLabels.checked ? '' : 'none';
+    camera.near = 0.05; camera.fov = 50; camera.updateProjectionMatrix();
+    camera.position.copy(orbitSaved.pos);
+    orbit.target.copy(orbitSaved.target);
+    orbit.enabled = true;
+    orbit.update();
+    ele.speed = 0; ele.steer = 0;
+    animateEle(1);   // Beine und Ohren zurück in die Grundstellung
+  }
   if (prev === 'walk' && m !== 'walk') {
     plc.unlock();
     exitFullscreen();
@@ -1265,8 +1661,28 @@ function setMode(m) {
   }
   mode = m;
   document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
-  help.textContent = HELP[m];
-  if (m === 'walk') {
+  updateHelp();
+  if (m === 'ele') {
+    tween = null;
+    eleReturn = prev === 'top' ? 'top' : 'orbit';
+    orbitSaved = { pos: camera.position.clone(), target: orbit.target.clone() };
+    orbit.enabled = false;
+    ceilingBeforeWalk = ceiling.visible;
+    setCeiling(true);
+    labelRenderer.domElement.style.display = 'none';
+    camera.near = 0.01; camera.updateProjectionMatrix();
+    document.activeElement?.blur?.();   // Leertaste soll keinen Button im Bedienfeld auslösen
+    renderer.domElement.style.cursor = '';
+    eleFwd.set(Math.sin(toyEle.group.rotation.y), 0, Math.cos(toyEle.group.rotation.y));
+    collideEle(toyEle.group);
+    ele.speed = 0;
+    ele.camYaw = toyEle.group.rotation.y;
+    ele.camDist = ELE.camDist;
+    updateEleCamera(0);
+    hud.firstChild.nodeValue = '0';
+    hud.style.display = 'block';
+    if (isTouch) { document.body.classList.add('driving'); eleOverlay.style.display = 'flex'; eleOverlayAt = performance.now(); }
+  } else if (m === 'walk') {
     tween = null;
     orbitSaved = { pos: camera.position.clone(), target: orbit.target.clone() };
     orbit.enabled = false;
@@ -1277,23 +1693,25 @@ function setMode(m) {
     overlay.style.display = 'flex';
     enterFullscreen();
   } else if (m === 'top') {
-    flyTo(new THREE.Vector3(0, 19, 0.3), new THREE.Vector3(0, 0, 0));
+    if (prev !== 'ele') flyTo(new THREE.Vector3(0, 19, 0.3), new THREE.Vector3(0, 0, 0));
   } else if (prev === 'top') {
     flyTo(HOME.pos, HOME.target);
   }
 }
 document.querySelectorAll('#modes button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 document.getElementById('btnReset').addEventListener('click', () => {
-  if (mode === 'walk') setMode('orbit');
+  if (mode === 'walk' || mode === 'ele') setMode('orbit');
   mode = 'orbit';
   document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('active', b.dataset.mode === 'orbit'));
-  help.textContent = HELP.orbit;
+  updateHelp();
   flyTo(HOME.pos, HOME.target);
 });
 const btnFurn = document.getElementById('btnFurn');
 btnFurn.addEventListener('click', () => {
   furniture.visible = !furniture.visible;
   btnFurn.textContent = furniture.visible ? 'Möbel ausblenden' : 'Möbel einblenden';
+  if (!furniture.visible && mode === 'ele') setMode(eleReturn);   // ohne Möbel kein Elefant
+  updateHelp();
 });
 // Bedienfeld nach links ein-/ausfahren (Zustand bleibt beim Neuladen erhalten)
 const panel = document.getElementById('panel');
@@ -1314,7 +1732,6 @@ setPanel(panelStart, { focus: false });
 requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.remove('preload')));
 chkCeil.addEventListener('change', () => { setCeiling(chkCeil.checked); });
 chkLabels.addEventListener('change', () => { labelRenderer.domElement.style.display = chkLabels.checked ? '' : 'none'; });
-help.textContent = HELP.orbit;
 applyTouch();
 
 addEventListener('resize', () => {
@@ -1324,7 +1741,7 @@ addEventListener('resize', () => {
   labelRenderer.setSize(innerWidth, innerHeight);
 });
 
-// --- Türen anklicken ------------------------------------------------------------------
+// --- Türen und Elefant anklicken ---------------------------------------------------------
 const pickRay = new THREE.Raycaster(), ndc = new THREE.Vector2();
 let aimTimer = 0, downPos = null;
 function pickDoor(clientX, clientY, center = false) {
@@ -1332,14 +1749,15 @@ function pickDoor(clientX, clientY, center = false) {
   else ndc.set(clientX / innerWidth * 2 - 1, -(clientY / innerHeight) * 2 + 1);
   pickRay.setFromCamera(ndc, camera);
   pickRay.far = center ? 3.0 : Infinity;
-  const pickables = [...doorPick, ...occluders];
+  const pickables = [...doorPick, ...(furniture.visible && mode !== 'ele' ? elePick : []), ...occluders];
   const hits = pickRay.intersectObjects(pickables, false);
   if (!hits.length) return null;
   const u = hits[0].object.userData;
-  return u.door || null;
+  return u.door || (u.toy ? 'ele' : null);
 }
 function activate(d) {
-  if (d) toggleDoor(d);
+  if (d === 'ele') setMode('ele');
+  else if (d) toggleDoor(d);
 }
 renderer.domElement.addEventListener('pointerdown', e => { downPos = [e.clientX, e.clientY]; });
 renderer.domElement.addEventListener('pointerup', e => {
@@ -1365,7 +1783,9 @@ addEventListener('keydown', e => {
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05);
-  if (mode === 'walk') {
+  if (mode === 'ele') {
+    eleStep(dt);
+  } else if (mode === 'walk') {
     walkStep(dt);
   } else {
     if (tween) {
@@ -1393,7 +1813,7 @@ renderer.setAnimationLoop(() => {
 });
 
 // Für Tests/Debugging
-window.__app = { scene, camera, orbit, setMode, solids, doors, toggleDoor, furniture, collide, activate, get isTouch() { return isTouch; } };
+window.__app = { scene, camera, orbit, setMode, solids, doors, toggleDoor, furniture, collide, activate, toyEle, ele, keys, touchCtl, tilt, eleStep, get mode() { return mode; }, get isTouch() { return isTouch; } };
 </script>
 </body>
 </html>
