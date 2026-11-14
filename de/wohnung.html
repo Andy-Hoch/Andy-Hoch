@@ -36,13 +36,28 @@
   .btn.primary { background:#f7f3ea; border-color:#e4dccb; }
   .tog { display:flex; align-items:center; gap:8px; padding:4px 0; cursor:pointer; }
   #help { position:absolute; left:16px; bottom:16px; max-width:calc(100% - 32px); padding:8px 12px; border-radius:9px; background:rgba(255,255,255,.85); font-size:12px; color:var(--muted); z-index:5; }
+  #hud { position:absolute; right:16px; bottom:16px; display:none; padding:8px 14px; border-radius:9px; background:rgba(255,255,255,.85); font-size:22px; font-weight:600; font-variant-numeric:tabular-nums; color:#1f2328; z-index:5; }
+  #hud small { font-size:12px; font-weight:500; color:var(--muted); margin-left:4px; }
   #walkOverlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(20,22,26,.35); z-index:4; cursor:pointer; }
-  #walkOverlay > div { background:#fff; padding:18px 24px; border-radius:12px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,.2); max-width:320px; }
-  #walkOverlay b { font-size:16px; }
-  #walkOverlay p { margin:8px 0 0; font-size:13px; color:var(--muted); }
+  #carOverlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center; padding:16px; background:rgba(20,22,26,.35); z-index:7; cursor:pointer; }
+  #walkOverlay > div, #carOverlay > div { background:#fff; padding:18px 24px; border-radius:12px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,.2); max-width:320px; }
+  #walkOverlay b, #carOverlay b { font-size:16px; }
+  #walkOverlay p, #carOverlay p { margin:8px 0 0; font-size:13px; color:var(--muted); }
   #crosshair { position:absolute; left:50%; top:50%; width:6px; height:6px; margin:-3px 0 0 -3px; border-radius:50%; background:rgba(255,255,255,.9); box-shadow:0 0 0 1px rgba(0,0,0,.35); display:none; z-index:4; pointer-events:none; }
   #crosshair.hot { width:12px; height:12px; margin:-6px 0 0 -6px; background:#ffd75e; }
   @media (max-width: 600px) { #panel { width:auto; right:16px; } }
+  /* Fahrmodus auf Touch-Geräten: Gas-Button, Lenk-Buttons (Ausweichlösung), Beenden */
+  .drive-btn { position:absolute; display:none; align-items:center; justify-content:center; border:0; border-radius:50%; background:rgba(255,255,255,.82); color:#1f2328; font:inherit; font-weight:700; box-shadow:0 4px 18px rgba(0,0,0,.18); z-index:6; touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; transition:transform .08s, background-color .08s; }
+  .drive-btn.down { transform:scale(.92); background:rgba(225,228,232,.92); }
+  #btnGas { right:calc(20px + env(safe-area-inset-right)); bottom:calc(24px + env(safe-area-inset-bottom)); width:88px; height:88px; font-size:16px; letter-spacing:.06em; }
+  #btnSteerL, #btnSteerR { bottom:calc(32px + env(safe-area-inset-bottom)); width:68px; height:68px; font-size:22px; }
+  #btnSteerL { left:calc(20px + env(safe-area-inset-left)); }
+  #btnSteerR { left:calc(100px + env(safe-area-inset-left)); }
+  #btnCarExit { left:calc(16px + env(safe-area-inset-left)); top:calc(16px + env(safe-area-inset-top)); width:44px; height:44px; font-size:18px; font-weight:600; }
+  body.driving #btnGas, body.driving #btnCarExit { display:flex; }
+  body.driving.steer-buttons #btnSteerL, body.driving.steer-buttons #btnSteerR { display:flex; }
+  body.driving #panel, body.driving #btnShow, body.driving #help { display:none; }
+  body.driving #hud { bottom:auto; top:calc(16px + env(safe-area-inset-top)); right:calc(16px + env(safe-area-inset-right)); }
 </style>
 <script type="importmap">
 { "imports": {
@@ -76,6 +91,16 @@
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
 </button>
 <div id="help"></div>
+<div id="hud">0<small>km/h</small></div>
+<button id="btnGas" class="drive-btn" aria-label="Gas geben (gedrückt halten)">GAS</button>
+<button id="btnSteerL" class="drive-btn" aria-label="Nach links lenken">◀</button>
+<button id="btnSteerR" class="drive-btn" aria-label="Nach rechts lenken">▶</button>
+<button id="btnCarExit" class="drive-btn" aria-label="Fahren beenden" title="Fahren beenden">✕</button>
+<div id="carOverlay"><div>
+  <b>Spielzeugauto</b>
+  <p>Halte das Handy wie ein Lenkrad und tippe zum Starten.</p>
+  <p>Kippen = lenken · GAS gedrückt halten = fahren<br>Loslassen = ausrollen · ✕ = beenden</p>
+</div></div>
 <div id="crosshair"></div>
 <div id="walkOverlay"><div>
   <b>Rundgang</b>
@@ -324,7 +349,7 @@ function door(hinge, closedTip, openTip, { glass = false, open = false } = {}) {
   const pivot = new THREE.Group();
   pivot.position.set(hx, 0, hz);
   scene.add(pivot);
-  const d = { pivot, a0, delta, L, hx, hz, t: open ? 1 : 0, target: open ? 1 : 0 };
+  const d = { pivot, a0, delta, L, hx, hz, glass, t: open ? 1 : 0, target: open ? 1 : 0 };
   const part = (lx, ly, lz, px, py, mat, shadow = true) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(lx, ly, lz), mat);
     m.position.set(px, py, 0);
@@ -507,6 +532,8 @@ aabb(12.30, 12.40, 9.97, 10.59, 0, 1.0, wallMats);                      // Brüs
 const SWING = { top: 2.05, len: 1.62, A: 0, t: 0, w: Math.sqrt(9.81 / 1.75), tau: 6 };
 const swing = { group: null };
 const swingPick = [];
+const toyCar = { group: null, wheels: [], steer: [] };   // fahrbares Spielzeugauto
+const carPick = [];
 const furniture = new THREE.Group();
 furniture.visible = false;   // Möbel starten ausgeblendet (Button „Möbel einblenden“)
 scene.add(furniture);
@@ -1080,12 +1107,21 @@ function books(x0, x1, Y, h0, mats, { alongY = false } = {}) {   // stehende Bü
   psph(8.85, 2.25, 0.09, 0.08, F.toys[4]);
   {
     const g = grp(9.0, 2.8, 70);
+    toyCar.group = g;
     ls(g, -0.06, 0.06, 0.04, 0.1, -0.12, 0.12, F.toys[0], 0.02);
     ls(g, -0.05, 0.05, 0.1, 0.15, -0.06, 0.05, F.toys[5], 0.02);
+    // Räder in eigenen Drehpunkten: Vorderräder lenken, alle drehen sich beim Fahren
     for (const sx of [-0.065, 0.065]) for (const sz of [-0.08, 0.08]) {
-      const w = lc(g, sx, sz, 0.03, 0.03, -0.01, 0.01, F.black, 12);
-      w.rotation.z = Math.PI / 2; w.position.y = 0.043;
+      const pv = new THREE.Group();
+      pv.position.set(sx, 0.043, sz);
+      g.add(pv);
+      const w = lc(pv, 0, 0, 0.03, 0.03, -0.01, 0.01, F.black, 12);
+      w.rotation.z = Math.PI / 2;
+      for (const sy of [-0.0105, 0.0105]) mk(new THREE.BoxGeometry(0.014, 0.002, 0.008), F.toys[5], w, 0.012, sy, 0, false);   // Markierung, damit man das Drehen sieht
+      toyCar.wheels.push(w);
+      if (sz > 0) toyCar.steer.push(pv);
     }
+    g.traverse(o => { if (o.isMesh) { o.userData.car = true; carPick.push(o); } });
   }
 }
 
@@ -1401,7 +1437,12 @@ const plc = new PointerLockControls(camera, renderer.domElement);
 const overlay = document.getElementById('walkOverlay');
 const crosshair = document.getElementById('crosshair');
 const keys = {};
-addEventListener('keydown', e => { keys[e.code] = true; if (mode === 'walk' && e.code.startsWith('Arrow')) e.preventDefault(); });
+addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if ((mode === 'walk' || mode === 'car') && e.code.startsWith('Arrow')) e.preventDefault();
+  if (mode === 'car' && e.code === 'Space') e.preventDefault();
+  if (mode === 'car' && e.code === 'Escape') setMode(carReturn);
+});
 addEventListener('keyup', e => { keys[e.code] = false; });
 // Vollbild für den Rundgang (Fehler/fehlende Unterstützung still ignorieren)
 const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement;
@@ -1427,6 +1468,7 @@ function applyTouch() {
   isTouch = touchMQ.matches;
   document.querySelector('#modes [data-mode="walk"]').hidden = isTouch;
   if (isTouch && mode === 'walk') setMode('orbit');
+  updateHelp();
 }
 touchMQ.addEventListener?.('change', applyTouch);
 overlay.addEventListener('click', () => { plc.lock(); enterFullscreen(); });
@@ -1434,23 +1476,23 @@ plc.addEventListener('lock', () => { overlay.style.display = 'none'; crosshair.s
 plc.addEventListener('unlock', () => { if (mode === 'walk') overlay.style.display = 'flex'; crosshair.style.display = 'none'; });
 
 const RADIUS = 0.22, EYE = 1.65;
-function collide(p) {
+function collide(p, r = RADIUS) {
   for (let it = 0; it < 3; it++) {
     for (const s0 of solids) {
       if (s0.furn && !furniture.visible) continue;
-      const s = s0.door ? doorBox(s0.door) : s0;
+      const s = s0.door ? doorBox(s0.door) : s0.dyn ? s0.dyn() : s0;
       const dx = p.x - s.cx, dz = p.z - s.cz, c = Math.cos(s.a), sn = Math.sin(s.a);
       const lx = dx * c - dz * sn, lz = dx * sn + dz * c;
       const qx = Math.max(-s.hx, Math.min(s.hx, lx)), qz = Math.max(-s.hz, Math.min(s.hz, lz));
       let ex = lx - qx, ez = lz - qz, d = Math.hypot(ex, ez);
       let px, pz;
       if (d > 1e-6) {
-        if (d >= RADIUS) continue;
-        px = ex / d * (RADIUS - d); pz = ez / d * (RADIUS - d);
+        if (d >= r) continue;
+        px = ex / d * (r - d); pz = ez / d * (r - d);
       } else {
         const ox = s.hx - Math.abs(lx), oz = s.hz - Math.abs(lz);
-        if (ox < oz) { px = Math.sign(lx || 1) * (ox + RADIUS); pz = 0; }
-        else { px = 0; pz = Math.sign(lz || 1) * (oz + RADIUS); }
+        if (ox < oz) { px = Math.sign(lx || 1) * (ox + r); pz = 0; }
+        else { px = 0; pz = Math.sign(lz || 1) * (oz + r); }
       }
       p.x += px * c + pz * sn;
       p.z += -px * sn + pz * c;
@@ -1473,8 +1515,155 @@ function walkStep(dt) {
   camera.position.y = EYE;
 }
 
+// --- Spielzeugauto fahren (Verfolgerkamera) -------------------------------------------
+// Liegt der Punkt p näher als r an einem Hindernis?
+function penetrates(p, r) {
+  for (const s0 of solids) {
+    if (s0.furn && !furniture.visible) continue;
+    const s = s0.door ? doorBox(s0.door) : s0.dyn ? s0.dyn() : s0;
+    const dx = p.x - s.cx, dz = p.z - s.cz, c = Math.cos(s.a), sn = Math.sin(s.a);
+    const lx = dx * c - dz * sn, lz = dx * sn + dz * c;
+    const qx = Math.max(-s.hx, Math.min(s.hx, lx)), qz = Math.max(-s.hz, Math.min(s.hz, lz));
+    if (Math.hypot(lx - qx, lz - qz) < r) return true;
+  }
+  return false;
+}
+const CAR = {
+  acc: 3.0, brake: 6.0, handbrake: 9.0, drag: 1.2,   // m/s²
+  maxF: 2.2, maxR: 0.8,                               // m/s vorwärts / rückwärts
+  turn: 3.0, r: 0.1, wheelR: 0.03,                    // rad/s, Kollisionsradius, Radradius
+  camDist: 0.45, camH: 0.2, fov: 50, fovMax: 62,
+};
+const car = { speed: 0, steer: 0, spin: 0, camYaw: 0, camDist: CAR.camDist };
+const hud = document.getElementById('hud');
+const carFwd = new THREE.Vector3(), carPrev = new THREE.Vector3(), camDir = new THREE.Vector3(), camTry = new THREE.Vector3(), lookAt = new THREE.Vector3();
+const wrapAngle = a => Math.atan2(Math.sin(a), Math.cos(a));
+// Touch-Steuerung: Gas-Button, Lenken über Neigung (Gyroskop), Lenk-Buttons als Ausweichlösung
+const touchCtl = { gas: false, steer: 0, btnSteer: 0 };
+const tilt = { zero: null, n: 0, got: false, timer: 0, on: false };
+const carOverlay = document.getElementById('carOverlay');
+// Neigung wie ein Lenkrad: Richtung der Schwerkraft in Bildschirm-Koordinaten (funktioniert hoch und quer)
+function onTilt(e) {
+  if (e.beta == null || e.gamma == null) return;
+  const b = THREE.MathUtils.degToRad(e.beta), g = THREE.MathUtils.degToRad(e.gamma);
+  const gx = Math.cos(b) * Math.sin(g), gy = -Math.sin(b);               // Schwerkraft im Geräte-System
+  const th = THREE.MathUtils.degToRad(screen.orientation?.angle ?? window.orientation ?? 0);
+  const sx = gx * Math.cos(th) - gy * Math.sin(th), sy = gx * Math.sin(th) + gy * Math.cos(th);
+  if (Math.hypot(sx, sy) < 0.2) return;                                 // Handy liegt fast flach: Lenkung nicht ablesbar
+  const roll = Math.atan2(sx, -sy);                                     // > 0 = im Uhrzeigersinn gekippt (rechts)
+  if (!tilt.got) { tilt.got = true; document.body.classList.remove('steer-buttons'); }
+  if (tilt.n < 8) { tilt.zero = tilt.n ? tilt.zero + wrapAngle(roll - tilt.zero) / (tilt.n + 1) : roll; tilt.n++; }   // Nullstellung = Haltung beim Start
+  const d = THREE.MathUtils.radToDeg(wrapAngle(roll - tilt.zero));
+  const mag = Math.min(1, Math.max(0, (Math.abs(d) - 3) / 22));        // Totzone ±3°, voller Einschlag bei ±25°
+  touchCtl.steer = -Math.sign(d) * mag;                                 // links kippen = links lenken
+}
+function recalibrateTilt() { tilt.zero = null; tilt.n = 0; }
+screen.orientation?.addEventListener?.('change', recalibrateTilt);
+addEventListener('orientationchange', recalibrateTilt);
+async function startTilt() {
+  let ok = true;
+  try {
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function')
+      ok = (await DeviceOrientationEvent.requestPermission()) === 'granted';   // iPhone/iPad: Erlaubnis nötig
+  } catch (e) { ok = false; }
+  if (mode !== 'car') return;
+  recalibrateTilt();
+  tilt.got = false;
+  if (ok && typeof DeviceOrientationEvent !== 'undefined') { addEventListener('deviceorientation', onTilt); tilt.on = true; }
+  clearTimeout(tilt.timer);
+  tilt.timer = setTimeout(() => { if (mode === 'car' && !tilt.got) document.body.classList.add('steer-buttons'); }, ok ? 1000 : 0);
+}
+function stopTouchDrive() {
+  if (tilt.on) { removeEventListener('deviceorientation', onTilt); tilt.on = false; }
+  clearTimeout(tilt.timer);
+  touchCtl.gas = false; touchCtl.steer = 0; touchCtl.btnSteer = 0;
+  document.querySelectorAll('.drive-btn.down').forEach(b => b.classList.remove('down'));
+  carOverlay.style.display = 'none';
+  document.body.classList.remove('driving', 'steer-buttons');
+}
+let carOverlayAt = 0;
+carOverlay.addEventListener('click', () => {
+  if (performance.now() - carOverlayAt < 450) return;   // Geister-Klick vom Antippen des Autos ignorieren
+  carOverlay.style.display = 'none';
+  startTilt();          // zuerst: die Erlaubnis-Abfrage muss direkt aus dem Tipp kommen
+  enterFullscreen();
+});
+// Gedrückt-halten-Buttons (mehrere Finger gleichzeitig möglich)
+function holdButton(el, onChange) {
+  const set = (on, e) => {
+    el.classList.toggle('down', on);
+    onChange(on);
+    if (on && e) try { el.setPointerCapture(e.pointerId); } catch (_) {}
+  };
+  el.addEventListener('pointerdown', e => { e.preventDefault(); set(true, e); });
+  for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) el.addEventListener(t, () => set(false));
+  el.addEventListener('contextmenu', e => e.preventDefault());
+}
+holdButton(document.getElementById('btnGas'), on => { touchCtl.gas = on; });
+holdButton(document.getElementById('btnSteerL'), on => { touchCtl.btnSteer = on ? 1 : (touchCtl.btnSteer === 1 ? 0 : touchCtl.btnSteer); });
+holdButton(document.getElementById('btnSteerR'), on => { touchCtl.btnSteer = on ? -1 : (touchCtl.btnSteer === -1 ? 0 : touchCtl.btnSteer); });
+document.getElementById('btnCarExit').addEventListener('click', () => setMode(carReturn));
+function carStep(dt) {
+  const g = toyCar.group;
+  const up = keys.KeyW || keys.ArrowUp || touchCtl.gas, down = keys.KeyS || keys.ArrowDown;   // Touch: nur Gas, kein Rückwärts
+  const keySteer = (keys.KeyA || keys.ArrowLeft ? 1 : 0) - (keys.KeyD || keys.ArrowRight ? 1 : 0);
+  const steerIn = Math.max(-1, Math.min(1, keySteer + touchCtl.steer + touchCtl.btnSteer));
+  // Gas, Bremse, Rückwärts, Ausrollen
+  let v = car.speed;
+  if (keys.Space) v -= Math.sign(v) * Math.min(Math.abs(v), CAR.handbrake * dt);
+  else if (up && !down) v += (v < 0 ? CAR.brake : CAR.acc) * dt;
+  else if (down && !up) v -= (v > 0 ? CAR.brake : CAR.acc * 0.8) * dt;
+  else v -= Math.sign(v) * Math.min(Math.abs(v), CAR.drag * dt);
+  v = Math.max(-CAR.maxR, Math.min(CAR.maxF, v));
+  // Lenken: im Stand kein Drehen, bei hohem Tempo etwas weniger, rückwärts umgekehrt
+  car.steer += (steerIn - car.steer) * (1 - Math.exp(-dt * 10));
+  const grip = Math.min(1, Math.abs(v) / 0.4) * (1 - 0.35 * Math.abs(v) / CAR.maxF);
+  g.rotation.y += car.steer * CAR.turn * grip * Math.sign(v) * dt;
+  // Bewegen und an Wänden/Möbeln/Türen abprallen
+  carFwd.set(Math.sin(g.rotation.y), 0, Math.cos(g.rotation.y));
+  carPrev.copy(g.position);
+  g.position.addScaledVector(carFwd, v * dt);
+  collide(g.position, CAR.r);
+  g.position.y = 0;
+  if (Math.abs(v) > 1e-4) {
+    const along = (g.position.x - carPrev.x) * carFwd.x + (g.position.z - carPrev.z) * carFwd.z;
+    const ratio = along / (v * dt);
+    if (ratio < 0.3 && Math.abs(v) > 0.8) v = -v * 0.2;                        // frontal: kleiner Abpraller
+    else if (ratio < 0.999) v *= Math.pow(Math.max(0, ratio), 60 * dt * 0.25); // schräg: an der Wand entlangschrammen, Tempo sinkt
+  }
+  car.speed = v;
+  // Räder
+  car.spin += v * dt / CAR.wheelR;
+  for (const w of toyCar.wheels) w.rotation.x = car.spin;
+  for (const pv of toyCar.steer) pv.rotation.y = car.steer * 0.4;
+  // Verfolgerkamera: folgt der Fahrtrichtung weich, rückt vor Wänden näher ans Auto
+  car.camYaw += wrapAngle(g.rotation.y - car.camYaw) * (1 - Math.exp(-dt * 5));
+  updateCarCamera(dt);
+  hud.firstChild.nodeValue = String(Math.round(Math.abs(v) * 3.6 * 10) / 10).replace('.', ',');
+}
+function updateCarCamera(dt) {
+  const g = toyCar.group;
+  camDir.set(Math.sin(car.camYaw), 0, Math.cos(car.camYaw));
+  let free = CAR.camDist;
+  for (let i = 1; i <= 12; i++) {
+    const d = CAR.camDist * i / 12;
+    camTry.copy(g.position).addScaledVector(camDir, -d);
+    if (penetrates(camTry, 0.05)) { free = CAR.camDist * (i - 1) / 12; break; }
+  }
+  car.camDist = free < car.camDist || dt === 0 ? free : car.camDist + (free - car.camDist) * (1 - Math.exp(-dt * 3));
+  camera.position.copy(g.position).addScaledVector(camDir, -car.camDist);
+  camera.position.y = CAR.camH * (0.55 + 0.45 * car.camDist / CAR.camDist);
+  carFwd.set(Math.sin(g.rotation.y), 0, Math.cos(g.rotation.y));
+  lookAt.copy(g.position).addScaledVector(carFwd, 0.15);
+  lookAt.y = 0.07;
+  camera.lookAt(lookAt);
+  const base = camera.aspect < 1 ? 66 : CAR.fov;   // Hochformat: weiterer Blickwinkel
+  const fov = base + (CAR.fovMax - CAR.fov) * Math.max(0, car.speed) / CAR.maxF;
+  if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
+}
+
 // --- Modi & UI ---------------------------------------------------------------------
-let mode = 'orbit', tween = null, ceilingBeforeWalk = false, orbitSaved = null;
+let mode = 'orbit', tween = null, ceilingBeforeWalk = false, orbitSaved = null, carReturn = 'orbit';
 const chkCeil = document.getElementById('chkCeil');
 const chkLabels = document.getElementById('chkLabels');
 const btnCurtain = document.getElementById('btnCurtain');
@@ -1483,7 +1672,12 @@ const HELP = {
   orbit: 'Linke Maustaste: drehen · Rechte Maustaste: verschieben · Mausrad: zoomen · Klick auf Tür: öffnen/schließen',
   top: 'Linke Maustaste: drehen · Rechte Maustaste: verschieben · Mausrad: zoomen · Klick auf Tür: öffnen/schließen',
   walk: 'Rundgang: W A S D gehen · Maus umsehen · Klick oder E auf Tür: öffnen/schließen · Esc Pause · „3D“ beendet',
+  car: 'Spielzeugauto: W / ↑ Gas · S / ↓ Bremse/Rückwärts · A D / ← → lenken · Leertaste Handbremse · Klick auf Tür: öffnen/schließen · Esc beenden',
 };
+function updateHelp() {
+  const carHint = (mode === 'orbit' || mode === 'top') && furniture.visible ? (isTouch ? ' · Tippe aufs Spielzeugauto: fahren' : ' · Klick auf Spielzeugauto: fahren') : '';
+  help.textContent = HELP[mode] + carHint;
+}
 function flyTo(pos, target, dur = 1.0) {
   tween = { t: 0, dur, p0: camera.position.clone(), p1: pos.clone(), t0: orbit.target.clone(), t1: target.clone() };
 }
@@ -1491,7 +1685,21 @@ function setCeiling(v) { ceiling.visible = v; chkCeil.checked = v; curtain.recei
 function setMode(m) {
   if (m === mode && m !== 'top') return;
   if (m === 'walk' && isTouch) return;
+  if (m === 'car' && (!furniture.visible || !toyCar.group)) return;
   const prev = mode;
+  if (prev === 'car' && m !== 'car') {
+    hud.style.display = 'none';
+    if (document.body.classList.contains('driving')) exitFullscreen();
+    stopTouchDrive();
+    setCeiling(ceilingBeforeWalk);
+    labelRenderer.domElement.style.display = chkLabels.checked ? '' : 'none';
+    camera.near = 0.05; camera.fov = CAR.fov; camera.updateProjectionMatrix();
+    camera.position.copy(orbitSaved.pos);
+    orbit.target.copy(orbitSaved.target);
+    orbit.enabled = true;
+    orbit.update();
+    car.speed = 0;
+  }
   if (prev === 'walk' && m !== 'walk') {
     plc.unlock();
     exitFullscreen();
@@ -1504,8 +1712,27 @@ function setMode(m) {
   }
   mode = m;
   document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
-  help.textContent = HELP[m];
-  if (m === 'walk') {
+  updateHelp();
+  if (m === 'car') {
+    tween = null;
+    carReturn = prev === 'top' ? 'top' : 'orbit';
+    orbitSaved = { pos: camera.position.clone(), target: orbit.target.clone() };
+    orbit.enabled = false;
+    ceilingBeforeWalk = ceiling.visible;
+    setCeiling(true);
+    labelRenderer.domElement.style.display = 'none';
+    camera.near = 0.01; camera.updateProjectionMatrix();
+    document.activeElement?.blur?.();   // Leertaste soll keinen Button im Bedienfeld auslösen
+    renderer.domElement.style.cursor = '';
+    collide(toyCar.group.position, CAR.r);
+    car.speed = 0;
+    car.camYaw = toyCar.group.rotation.y;
+    car.camDist = CAR.camDist;
+    updateCarCamera(0);
+    hud.firstChild.nodeValue = '0';
+    hud.style.display = 'block';
+    if (isTouch) { document.body.classList.add('driving'); carOverlay.style.display = 'flex'; carOverlayAt = performance.now(); }
+  } else if (m === 'walk') {
     tween = null;
     orbitSaved = { pos: camera.position.clone(), target: orbit.target.clone() };
     orbit.enabled = false;
@@ -1516,17 +1743,17 @@ function setMode(m) {
     overlay.style.display = 'flex';
     enterFullscreen();
   } else if (m === 'top') {
-    flyTo(new THREE.Vector3(0, 19, 0.6), new THREE.Vector3(0, 0, 0.3));
+    if (prev !== 'car') flyTo(new THREE.Vector3(0, 19, 0.6), new THREE.Vector3(0, 0, 0.3));
   } else if (prev === 'top') {
     flyTo(HOME.pos, HOME.target);
   }
 }
 document.querySelectorAll('#modes button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 document.getElementById('btnReset').addEventListener('click', () => {
-  if (mode === 'walk') setMode('orbit');
+  if (mode === 'walk' || mode === 'car') setMode('orbit');
   mode = 'orbit';
   document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('active', b.dataset.mode === 'orbit'));
-  help.textContent = HELP.orbit;
+  updateHelp();
   flyTo(HOME.pos, HOME.target);
 });
 btnCurtain.addEventListener('click', () => {
@@ -1537,6 +1764,8 @@ const btnFurn = document.getElementById('btnFurn');
 btnFurn.addEventListener('click', () => {
   furniture.visible = !furniture.visible;
   btnFurn.textContent = furniture.visible ? 'Möbel ausblenden' : 'Möbel einblenden';
+  if (!furniture.visible && mode === 'car') setMode(carReturn);   // ohne Möbel kein Auto
+  updateHelp();
 });
 // Bedienfeld nach links ein-/ausfahren (Zustand bleibt beim Neuladen erhalten)
 const panel = document.getElementById('panel');
@@ -1557,7 +1786,6 @@ setPanel(panelStart, { focus: false });
 requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.remove('preload')));
 chkCeil.addEventListener('change', () => { setCeiling(chkCeil.checked); });
 chkLabels.addEventListener('change', () => { labelRenderer.domElement.style.display = chkLabels.checked ? '' : 'none'; });
-help.textContent = HELP.orbit;
 applyTouch();
 
 addEventListener('resize', () => {
@@ -1575,14 +1803,15 @@ function pickDoor(clientX, clientY, center = false) {
   else ndc.set(clientX / innerWidth * 2 - 1, -(clientY / innerHeight) * 2 + 1);
   pickRay.setFromCamera(ndc, camera);
   pickRay.far = center ? 3.0 : Infinity;
-  const pickables = furniture.visible ? [...doorPick, ...swingPick, ...occluders] : [...doorPick, ...occluders];
+  const pickables = [...doorPick, ...(furniture.visible ? swingPick : []), ...(furniture.visible && mode !== 'car' ? carPick : []), ...occluders];
   const hits = pickRay.intersectObjects(pickables, false);
   if (!hits.length) return null;
   const u = hits[0].object.userData;
-  return u.door || (u.swing ? 'swing' : null);
+  return u.door || (u.swing ? 'swing' : u.car ? 'car' : null);
 }
 function activate(d) {
   if (d === 'swing') { SWING.A = THREE.MathUtils.degToRad(25); SWING.t = 0; }
+  else if (d === 'car') setMode('car');
   else if (d) toggleDoor(d);
 }
 renderer.domElement.addEventListener('pointerdown', e => { downPos = [e.clientX, e.clientY]; });
@@ -1614,7 +1843,9 @@ renderer.setAnimationLoop(() => {
     curtainT = curtainTarget > curtainT ? Math.min(curtainTarget, curtainT + step) : Math.max(curtainTarget, curtainT - step);
     updateCurtain();
   }
-  if (mode === 'walk') {
+  if (mode === 'car') {
+    carStep(dt);
+  } else if (mode === 'walk') {
     walkStep(dt);
   } else {
     if (tween) {
@@ -1648,7 +1879,7 @@ renderer.setAnimationLoop(() => {
 });
 
 // Für Tests/Debugging
-window.__app = { scene, camera, orbit, setMode, solids, doors, toggleDoor, furniture, collide, swing, SWING, activate, curtain, get isTouch() { return isTouch; } };
+window.__app = { scene, camera, orbit, setMode, solids, doors, toggleDoor, furniture, collide, swing, SWING, activate, curtain, toyCar, car, keys, touchCtl, tilt, get mode() { return mode; }, get isTouch() { return isTouch; } };
 </script>
 </body>
 </html>
