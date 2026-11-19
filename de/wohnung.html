@@ -248,7 +248,8 @@ const M = {
   wall:   new THREE.MeshStandardMaterial({ color: 0xf4f2ed, roughness: 0.92 }),
   cut:    new THREE.MeshStandardMaterial({ color: 0x2a2b2e, roughness: 0.8 }),
   frame:  new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 }),
-  sill:   new THREE.MeshStandardMaterial({ color: 0xe9e6df, roughness: 0.6 }),
+  sill:   new THREE.MeshStandardMaterial({ color: 0xa8743f, roughness: 0.6 }),   // Fensterbretter innen: Holz
+  sillOut:new THREE.MeshStandardMaterial({ color: 0xe9e6df, roughness: 0.6 }),   // Fensterbänke außen: weiß
   door:   new THREE.MeshStandardMaterial({ color: 0xfbfbf9, roughness: 0.55 }),
   glass:  new THREE.MeshPhysicalMaterial({ color: 0xcfe6f2, roughness: 0.05, transparent: true, opacity: 0.22, depthWrite: false }),
   frosted:new THREE.MeshStandardMaterial({ color: 0xf7f9f9, roughness: 1, transparent: true, opacity: 0.92, emissive: 0x3a3a38 }),
@@ -317,8 +318,18 @@ function windowParts(at, ang, s0, s1, sill, head, t, kind, noSill = false) {
   boxAt(cx, cz, len, fd, head - f, head, M.frame, ang, nos);
   boxAt(cx, cz, len, fd, sill + eps, sill + eps + f, M.frame, ang, nos);
   if (len > 1.1) boxAt(cx, cz, f * 0.8, fd, sill, head, M.frame, ang, nos);
-  if (eps) boxAt(cx, cz, len + 0.06, t + 0.06, sill - 0.03, sill + eps, M.sill, ang, nos);
+  if (eps) {   // Fensterbank in zwei Hälften: Innenseite Holz, Außenseite weiß
+    const nx = Math.sin(ang), nz = Math.cos(ang), d = (t + 0.06) / 2;
+    for (const s of [1, -1]) {
+      const probe = t / 2 + 0.15;
+      const mat = isInside(cx + nx * s * probe + OX, cz + nz * s * probe + OZ) ? M.sill : M.sillOut;
+      boxAt(cx + nx * s * d / 2, cz + nz * s * d / 2, len + 0.06, d, sill - 0.03, sill + eps, mat, ang, nos);
+    }
+  }
 }
+// Plan-Punkt innerhalb der Wohnung (ohne Veranda und Treppenhaus)? → dort Holz-Fensterbrett
+const inStairwell = (X, Y) => X > 6.49 && X < 8.72 && Y > 6.25 && Y < 9.57;
+const isInside = (X, Y) => X > 0.20 && X < 14.94 && Y > 0.40 && Y < 9.57 && !inStairwell(X, Y);
 function doorFrame(at, ang, s0, s1, head, t) {
   const fw = 0.04, [cx, cz] = at((s0 + s1) / 2);
   const [lx, lz] = at(s0 + fw / 2), [rx, rz] = at(s1 - fw / 2);
@@ -418,7 +429,7 @@ hWall(9.57, 9.97, 0, 15.20, [
 ]);
 // Kleines Küchenfenster: innen geschlossen (Wand), nur außen als Fenster sichtbar
 aabb(9.17, 9.51, 9.57, 9.72, 0.9, 2.30, wallMats);
-aabb(9.14, 9.54, 9.80, 10.02, 0.87, 0.908, M.sill, { solid: false });   // äußere Fensterbank
+aabb(9.14, 9.54, 9.80, 10.02, 0.87, 0.908, M.sillOut, { solid: false });   // äußere Fensterbank
 vWall(0, 0.20, 0.40, 9.57);
 vWall(14.94, 15.20, 0.40, 9.57);
 
@@ -444,11 +455,31 @@ aabb(8.87, 9.22, 9.20, 9.57, 0, H, wallMats);                          // Pfeile
 
 // Linie Spielen | Wohnen (hellgraue Teile abgerissen)
 aabb(11.22, 11.40, 0.40, 0.62, 0, H, wallMats);
-aabb(11.22, 11.40, 0.62, 1.51, 0, 0.90, wallMats);                     // Brüstungswand (Fensterbankhöhe)
+// Seitenansicht-Polygon (Punkte [Plan-Y, Höhe]) entlang X von x0 bis x1 extrudiert
+function sidePoly(pts, x0, x1, mat) {
+  const shape = new THREE.Shape(pts.map(([y, h]) => new THREE.Vector2(wz(y), h)));
+  const m = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: x1 - x0, bevelEnabled: false }), mat);
+  m.rotation.y = -Math.PI / 2;            // Shape-x → Plan-Y, Extrusion → -x
+  m.position.x = wx(x1);
+  m.castShadow = m.receiveShadow = true;
+  scene.add(m);
+  return m;
+}
+{
+  const Y0 = 0.62, Y1 = 1.51, bw = 0.16;   // Wandstück-Kante, Stütze, Balkenbreite (horizontal)
+  sidePoly([[Y0, H], [Y0 + bw, H], [Y1, 0], [Y1 - bw, 0]], 11.22, 11.40, M.wood);   // Diagonalbalken
+  sidePoly([[Y0, 0], [Y1 - bw, 0], [Y0, H]], 11.24, 11.38, M.wall);                // helle Wand zwischen Balken und Außenwand
+  const hb = 0.90, yb = Y1 - (Y1 - Y0 - bw) * hb / H;                               // Brüstungshöhe, Balkenkante auf dieser Höhe
+  sidePoly([[Y1, 0], [Y1, hb], [yb, hb]], 11.22, 11.40, M.wall);                   // Rest der alten Brüstung (Dreieck Balken | Stütze)
+  const beamY = h => Y1 - (Y1 - Y0 - bw) * h / H;                                    // Balkenkante (Stützenseite) auf Höhe h
+  const s0 = hb - 0.015, s1 = hb + 0.025;                                            // Fensterbrett 4 cm, steht 3 cm über
+  sidePoly([[beamY(s0), s0], [Y1, s0], [Y1, s1], [beamY(s1), s1]], 11.19, 11.43, M.sill);   // Fensterbrett auf der Brüstung
+  solids.push({ cx: wx(11.31), cz: wz((Y0 + Y1) / 2), hx: 0.09, hz: (Y1 - Y0) / 2, a: 0 });
+}
 // Tragende Holzstützen
-aabb(11.22, 11.40, 1.51, 1.71, 0, H, woodMats);
-aabb(11.22, 11.40, 2.68, 2.87, 0, H, woodMats);
-aabb(11.22, 11.40, 1.71, 2.68, 2.05, 2.20, woodMats, { solid: false });   // alter Türsturz (Schaukelbalken)
+aabb(11.22, 11.40, 1.51, 1.71, 0, H, M.wood);   // auch oben holzfarben
+aabb(11.22, 11.40, 2.68, 2.87, 0, H, M.wood);
+aabb(11.22, 11.40, 1.71, 2.68, 2.05, 2.20, M.wood, { solid: false });     // alter Türsturz (Schaukelbalken), auch oben holzfarben
 // Kamin (rechteckig, weiß)
 aabb(10.58, 11.40, 4.06, 4.57, 0, H, wallMats);
 
@@ -1384,18 +1415,32 @@ function updateCurtain() {
 updateCurtain();
 
 // --- Raum-Labels -----------------------------------------------------------------
+// Flächen der offenen Bereiche aus den Modellmaßen (Plan-Koordinaten, Innenmaße ohne Balkenlinie X 11.22–11.40)
+const rect = (x0, x1, y0, y1) => (x1 - x0) * (y1 - y0);
+const m2 = a => `${a.toFixed(2).replace('.', ',')} m²`;
+const AREA = {
+  // Spielen: Wand Eltern (7.68) bis Balkenlinie (11.22), Außenwand (0.40) bis Flurwand (4.57), minus Kamin (10.58–11.22 × 4.06–4.57)
+  spielen: rect(7.68, 11.22, 0.40, 4.57) - rect(10.58, 11.22, 4.06, 4.57),
+  // Wohnen: Balkenlinie (11.40) bis Außenwand Ost (14.94), Außenwand Nord (0.40) bis Nordkante Schacht (6.16)
+  wohnen: rect(11.40, 14.94, 0.40, 6.16),
+  // Küche: TRH-Wand (8.87) bis Ostkante Schacht (12.45), Küchenwand Nord (6.35) bis Außenwand Süd (9.57),
+  //        minus Schacht (11.69–12.45 × 6.35–6.95) und Pfeiler in der Ecke (8.87–9.22 × 9.20–9.57)
+  kueche: rect(8.87, 12.45, 6.35, 9.57) - rect(11.69, 12.45, 6.35, 6.95) - rect(8.87, 9.22, 9.20, 9.57),
+  // Essen (Rest): Ostkante Schacht (12.45) bis Außenwand Ost (14.94), Nordkante Schacht (6.16) bis Außenwand Süd (9.57)
+  essen: rect(12.45, 14.94, 6.16, 9.57),
+};
 const rooms = [
   ['Kinder', '16,33 m²', 1.98, 2.7],
   ['Eltern', '14,84 m²', 5.73, 2.5],
-  ['Spielen', '', 9.1, 2.5],
-  ['Wohnen', '', 13.17, 2.6],
-  ['Flur', '14,10 m²', 5.0, 5.45],
+  ['Spielen', m2(AREA.spielen), 9.1, 2.5],
+  ['Wohnen', m2(AREA.wohnen), 13.17, 2.6],
+  ['Flur', '12,18 m²', 5.0, 5.45],   // aus Modellmaßen: Flurwand Nord (4.77) bis Bad/WC/TRH, Ost offen bis Balkenlinie (11.40)
   ['Gäste/Büro', '11,75 m²', 1.45, 7.3],
   ['Bad', '7,68 m²', 4.1, 7.9],
   ['WC', '1,73 m²', 5.9, 8.6],
   ['Treppenhaus', '7,87 m²', 7.6, 6.75],
-  ['Küche', '', 10.4, 7.9],
-  ['Essen', '', 13.4, 7.9],
+  ['Küche', m2(AREA.kueche), 10.4, 7.9],
+  ['Essen', m2(AREA.essen), 13.4, 7.9],
   ['Veranda', '2,24 m²', 4.0, 10.33],
   ['Balkon', '2,12 m²', 11.1, 10.33],
 ];
