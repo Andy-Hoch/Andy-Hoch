@@ -81,7 +81,7 @@
   </div>
   <div class="gl">Einstellungen</div>
   <button class="btn primary" id="btnCurtain">Vorhang öffnen</button>
-  <button class="btn" id="btnFurn">Möbel einblenden</button>
+  <label class="tog"><input type="checkbox" id="chkFurn"> Möbel</label>
   <label class="tog"><input type="checkbox" id="chkLabels" checked> Raumnamen</label>
   <label class="tog"><input type="checkbox" id="chkCeil"> Decke</label>
   <div style="height:8px"></div>
@@ -236,6 +236,60 @@ const stoneTex = canvasTexture(512, 512, (g, w, h) => {
     }
   }
 });
+// Feiner Reibeputz (Kachel = 0,6 m, ~1,2 mm pro Pixel), nahtlos kachelbar
+const PLASTER_TILE = 0.6;
+function wrapDraw(w, h, x, y, r, fn) {           // zeichnet am Rand zusätzlich versetzt → keine Naht
+  for (const dx of [0, -w, w]) for (const dy of [0, -h, h]) {
+    const px = x + dx, py = y + dy;
+    if (px + r < 0 || px - r > w || py + r < 0 || py - r > h) continue;
+    fn(px, py);
+  }
+}
+function softBlob(g, w, h, x, y, r, rgb, a) {
+  wrapDraw(w, h, x, y, r, (px, py) => {
+    const gr = g.createRadialGradient(px, py, 0, px, py, r);
+    gr.addColorStop(0, `rgba(${rgb},${a})`);
+    gr.addColorStop(1, `rgba(${rgb},0)`);
+    g.fillStyle = gr;
+    g.fillRect(px - r, py - r, r * 2, r * 2);
+  });
+}
+const plasterBump = canvasTexture(512, 512, (g, w, h) => {
+  g.fillStyle = '#808080'; g.fillRect(0, 0, w, h);
+  for (let k = 0; k < 60000; k++) {                                   // feines, gleichmäßiges Putzkorn (keine Flecken)
+    const sz = 1 + rand() * 0.8, light = rand() > .5;
+    g.fillStyle = light ? `rgba(255,255,255,${0.06 + rand() * 0.12})` : `rgba(0,0,0,${0.06 + rand() * 0.12})`;
+    wrapDraw(w, h, rand() * w, rand() * h, sz, (px, py) => g.fillRect(px, py, sz, sz));
+  }
+  // leicht weichzeichnen (nahtlos: Kachel 3 × 3 zeichnen, Mitte zurückkopieren)
+  const big = document.createElement('canvas'); big.width = w * 3; big.height = h * 3;
+  const bg = big.getContext('2d');
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) bg.drawImage(g.canvas, i * w, j * h);
+  g.filter = 'blur(0.6px)';
+  g.drawImage(big, w, h, w, h, 0, 0, w, h);
+  g.filter = 'none';
+});
+plasterBump.colorSpace = THREE.NoColorSpace;
+const plasterColor = canvasTexture(256, 256, (g, w, h) => {
+  g.fillStyle = '#f4f2ed'; g.fillRect(0, 0, w, h);
+  for (let k = 0; k < 40; k++)                                        // kaum sichtbare Wolken (< 1 %)
+    softBlob(g, w, h, rand() * w, rand() * h, 50 + rand() * 70, rand() > .5 ? '255,255,255' : '120,115,105', 0.005 + rand() * 0.007);
+});
+// Projektion über Weltkoordinaten: Korn ist auf jeder Wand gleich groß (Box-UVs gehen pro Fläche 0…1)
+function worldProject(mat, tile) {
+  mat.onBeforeCompile = sh => {
+    sh.vertexShader = sh.vertexShader.replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
+      vec3 pw = (modelMatrix * vec4(position, 1.0)).xyz;
+      vec3 nw = abs(normalize(mat3(modelMatrix) * normal));
+      vec2 puv = nw.x > nw.z ? pw.zy : pw.xy;
+      if (nw.y > 0.9) puv = pw.xz;
+      puv /= ${tile.toFixed(3)};
+      vMapUv = puv * 0.5;
+      vBumpMapUv = puv + 0.37;`);
+  };
+  return mat;
+}
+
 function texFor(base, w, d, tile) {
   const t = base.clone();
   t.repeat.set(w / tile, d / tile);
@@ -245,7 +299,8 @@ function texFor(base, w, d, tile) {
 
 // --- Materialien ---------------------------------------------------------------
 const M = {
-  wall:   new THREE.MeshStandardMaterial({ color: 0xf4f2ed, roughness: 0.92 }),
+  wall:   worldProject(new THREE.MeshStandardMaterial({ color: 0xffffff, map: plasterColor,   // weiß verputzt (feiner Reibeputz)
+            bumpMap: plasterBump, bumpScale: 0.9, roughness: 0.95 }), PLASTER_TILE),
   cut:    new THREE.MeshStandardMaterial({ color: 0x2a2b2e, roughness: 0.8 }),
   frame:  new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 }),
   sill:   new THREE.MeshStandardMaterial({ color: 0xa8743f, roughness: 0.6 }),   // Fensterbretter innen: Holz
@@ -437,7 +492,6 @@ vWall(14.94, 15.20, 0.40, 9.57);
 vWall(3.77, 3.94, 0.40, 4.57);                                         // Kinder | Eltern
 vWall(7.52, 7.68, 0.40, 4.57);                                         // Eltern | Spielen
 hWall(4.57, 4.77, 3.77, 11.40, [Door(5.11, 5.87), Door(8.96, 9.72)]);   // Flurwand Nord
-aabb(6.97, 8.27, 4.77, 4.91, 0, H, wallMats);                          // Wandverstärkung über TRH
 hWall(5.00, 5.16, 0.20, 2.85);                                         // Kinder | Gäste
 wall([2.85, 5.08], [3.77, 4.72], 0.16, [{ full: true, sill: 0, head: 2.05, kind: 'door' }]); // Kindertür (diagonal)
 vWall(2.74, 2.91, 5.16, 9.57, [Door(5.19, 5.98)]);                     // Gäste | Flur/Bad
@@ -566,7 +620,7 @@ const swingPick = [];
 const toyCar = { group: null, wheels: [], steer: [] };   // fahrbares Spielzeugauto
 const carPick = [];
 const furniture = new THREE.Group();
-furniture.visible = false;   // Möbel starten ausgeblendet (Button „Möbel einblenden“)
+furniture.visible = false;   // Möbel starten ausgeblendet (Checkbox „Möbel“)
 scene.add(furniture);
 {
 const std = (color, roughness = 0.8, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness, ...extra });
@@ -718,13 +772,25 @@ function tableLamp(p, x, z, h0) {
   lc(p, x, z, 0.008, 0.008, h0 + 0.03, h0 + 0.3, F.brass, 8);
   lc(p, x, z, 0.09, 0.13, h0 + 0.26, h0 + 0.44, F.shade, 24, false);
 }
-function nightstand(X, Y, deg) {
+// Schlanke Pendelleuchte: schwarzes Rohr, kupferfarbener Konus nach unten; hb = Unterkante
+const copper = std(0x7a4632, 0.45, { metalness: 0.25, emissive: 0x1a0c06 });
+function slimPendant(p, x, z, hb) {
+  lc(p, x, z, 0.02, 0.044, hb, hb + 0.225, copper, 28);                   // Konus: oben Ø 4 cm (wie Rohr), unten Ø 8,8 cm
+  const glow = mk(new THREE.CircleGeometry(0.04, 24), F.bulb, p, x, hb + 0.004, z, false);
+  glow.rotation.x = Math.PI / 2;                                            // Lichtaustritt nach unten
+  lc(p, x, z, 0.02, 0.02, hb + 0.225, hb + 0.525, F.black, 20);            // Rohr Ø 4 cm
+  lc(p, x, z, 0.007, 0.007, hb + 0.525, hb + 0.545, F.black, 10, false);   // Kabelauslass
+  lc(p, x, z, 0.0015, 0.0015, hb + 0.545, H - 0.03, F.black, 6, false);    // Kabel
+  lc(p, x, z, 0.04, 0.04, H - 0.03, H, F.black, 20, false);                // Baldachin
+}
+function nightstand(X, Y, deg, { pendant = true } = {}) {
   const g = grp(X, Y, deg);
   lb(g, -0.225, 0.225, 0.12, 0.5, -0.2, 0.2, F.oak);
   for (const sx of [-0.19, 0.19]) for (const sz of [-0.16, 0.16]) lc(g, sx, sz, 0.014, 0.01, 0, 0.12, F.oak, 8);
   lb(g, -0.205, 0.205, 0.33, 0.336, 0.2, 0.203, F.black, false);
   lb(g, -0.06, 0.06, 0.4, 0.415, 0.2, 0.215, F.brass, false);
-  tableLamp(g, 0.02, -0.04, 0.5);
+  if (pendant) slimPendant(g, 0.03, -0.02, 1.15);   // Pendelleuchte über dem Nachttisch
+  else tableLamp(g, 0.02, -0.04, 0.5);              // oder klassische Tischlampe auf dem Nachttisch
   lb(g, -0.17, -0.02, 0.5, 0.53, 0.0, 0.15, F.toys[5]);   // Buch
   solid(g, -0.225, 0.225, -0.2, 0.2);
 }
@@ -773,6 +839,64 @@ function floorLamp(X, Y) {
   pc(X, Y, 0.14, 0.15, 0, 0.025, F.black);
   pc(X, Y, 0.012, 0.012, 0.025, 1.42, F.brass, 8);
   pc(X, Y, 0.13, 0.2, 1.36, 1.62, F.shade, 32, false);
+  psolid(X - 0.15, X + 0.15, Y - 0.15, Y + 0.15);
+}
+// Pendelleuchte mit gewelltem, gestuftem Schirm (weiß) und Messingstiften; hb = Unterkante Schirm
+const waveShade = std(0xf8f6f0, 0.85, { side: THREE.DoubleSide, emissive: 0xfff1d8, emissiveIntensity: 0.3 });
+const wavePin = std(0xc9a55c, 0.4, { emissive: 0x3a2a0c });   // Messington ohne Metallik (wirkt sonst schwarz)
+function waveTube(R, A, n, h) {   // offener Zylinder, Radius wellt sich mit n Wellen um ±A
+  const g = new THREE.CylinderGeometry(R, R, h, n * 8, 1, true), p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const th = Math.atan2(p.getZ(i), p.getX(i)), r = R + A * Math.cos(n * th);
+    p.setXYZ(i, Math.cos(th) * r, p.getY(i), Math.sin(th) * r);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+function wavePendant(X, Y, hb) {
+  const g = new THREE.Group();
+  g.position.set(wx(X), hb, wz(Y));
+  furniture.add(g);
+  const tier = (R, A, n, h0, h1) => mk(waveTube(R, A, n, h1 - h0), waveShade, g, 0, (h0 + h1) / 2, 0, false);
+  tier(0.15, 0.022, 9, 0, 0.07);         // unterer, schmalerer Ring
+  tier(0.22, 0.03, 12, 0.04, 0.27);      // Hauptschirm
+  tier(0.15, 0.022, 9, 0.24, 0.33);      // oberer Ring
+  const top = mk(new THREE.CircleGeometry(0.135, 36), waveShade, g, 0, 0.30, 0, false);
+  top.rotation.x = -Math.PI / 2;
+  // Messingstifte in den Wellentälern des Hauptschirms, oben und unten
+  for (let k = 0; k < 12; k++) {
+    const th = (2 * k + 1) * Math.PI / 12, r = 0.22 - 0.03 + 0.004;
+    for (const h of [0.09, 0.22]) {
+      const pin = mk(new THREE.BoxGeometry(0.05, 0.004, 0.004), wavePin, g, Math.cos(th) * r, h, Math.sin(th) * r, false);
+      pin.rotation.y = -th - Math.PI / 2;
+    }
+  }
+  lsph(g, 0, 0.16, 0, 0.05, F.bulb, false);                          // Leuchtmittel
+  lc(g, 0, 0, 0.003, 0.003, 0.30, H - hb - 0.05, F.white, 6, false);  // Kabel
+  lc(g, 0, 0, 0.06, 0.06, H - hb - 0.05, H - hb, F.white, 24, false); // Baldachin
+}
+// Bogenleuchte: runder Fuß bei (X, Y), schlanker schwarzer Bogen nach Westen (Reichweite W, Höhe top),
+// LED-Streifen an der Innenseite des oberen Bogenteils
+const ledStrip = std(0xfff6e0, 0.5, { emissive: 0xffe6bf, emissiveIntensity: 1.6 });
+function arcLamp(X, Y, W, top) {
+  const h0 = 0.03, b = top - h0, x0 = wx(X), z0 = wz(Y);
+  class Arc extends THREE.Curve {          // Viertelellipse: unten senkrecht, oben waagrecht
+    constructor(a0, a1, inset = 0) { super(); this.a0 = a0; this.a1 = a1; this.inset = inset; }
+    getPoint(t, o = new THREE.Vector3()) {
+      const a = this.a0 + (this.a1 - this.a0) * t;
+      const u = W - W * Math.cos(a), h = h0 + b * Math.sin(a);
+      // nach innen (Richtung Ellipsenmittelpunkt u = W, h = h0) versetzen
+      const du = W - u, dh = h0 - h, L = Math.hypot(du, dh) || 1;
+      return o.set(x0 - (u + du / L * this.inset), h + dh / L * this.inset, z0);
+    }
+  }
+  mk(new THREE.TubeGeometry(new Arc(0, Math.PI / 2), 96, 0.012, 10), F.black, P, 0, 0, 0);
+  mk(new THREE.TubeGeometry(new Arc(0.32 * Math.PI, Math.PI / 2, 0.009), 64, 0.006, 8), ledStrip, P, 0, 0, 0, false);
+  const cap = new THREE.Mesh(new THREE.CircleGeometry(0.012, 16), F.black);   // Abschluss am Bogenende
+  cap.position.set(x0 - W - 0.0005, top, z0);
+  cap.rotation.y = -Math.PI / 2;
+  P.add(cap);
+  pc(X, Y, 0.14, 0.15, 0, h0, F.black, 40);                                   // runder Standfuß
   psolid(X - 0.15, X + 0.15, Y - 0.15, Y + 0.15);
 }
 function plant(X, Y, s = 1, h0 = 0, solidIt = true) {
@@ -1017,6 +1141,7 @@ function books(x0, x1, Y, h0, mats, { alongY = false } = {}) {   // stehende Bü
   pb(13.1, 13.33, 2.3, 2.46, 0.44, 0.46, F.terra);
   pc(13.42, 2.52, 0.05, 0.04, 0.41, 0.62, F.white, 16);
   psph(13.42, 2.52, 0.66, 0.07, F.leaf2);
+  wavePendant(13.25, 2.40, 1.80);   // Pendelleuchte mit gewelltem Schirm über dem Couchtisch
   // Pouf
   pc(12.56, 2.85, 0.24, 0.24, 0, 0.32, F.beige, 32);
   psph(12.56, 2.85, 0.32, 0.24, F.beige).scale.set(1, 0.25, 1);
@@ -1033,6 +1158,8 @@ function books(x0, x1, Y, h0, mats, { alongY = false } = {}) {   // stehende Bü
   // Stehleuchte und große Pflanze
   floorLamp(14.68, 0.70);
   plant(14.58, 1.58, 1.1);
+  // Kleine Pflanze auf dem Fensterbrett der Brüstung (zwischen Diagonalbalken und Holzstütze, Oberkante 0,925 m)
+  plant(11.31, 1.37, 0.45, 0.925, false);
 }
 
 // --- Spielen: Spielteppich, Regal mit Boxen, Tipi, Sitztruhe, Kindertisch, Spielzeug ---
@@ -1261,8 +1388,8 @@ nightstand(4.15, 3.68, 90);
 
 // --- Gäste/Büro: Bett 140 × 200, Nachttische, Schreibtisch ----------------------------------
 bed(0.205, 6.90, 90, 1.4, 2.0, { head: F.grey, throwMat: F.mustard });
-nightstand(0.42, 5.90, 90);
-nightstand(0.42, 7.90, 90);
+nightstand(0.42, 5.90, 90, { pendant: false });   // Gästezimmer: Tischlampen
+nightstand(0.42, 7.90, 90, { pendant: false });
 {
   const x0 = 0.95, x1 = 2.35, y0 = 8.86, y1 = 9.565;
   pb(x0, x1, y0, y1, 0.72, 0.75, F.oak);
@@ -1271,8 +1398,8 @@ nightstand(0.42, 7.90, 90);
   pb(1.35, 1.70, 9.05, 9.30, 0.75, 0.765, F.black);             // Laptop
   const lid = pb(1.35, 1.70, 9.30, 9.31, 0.765, 0.99, F.black);
   lid.rotation.x = 0.2;
-  tableLamp(P, wx(2.15), wz(9.35), 0.75);
   books(0.98, 1.15, 9.4, 0.75, [F.toys[2], F.sage, F.toys[5]]);
+  arcLamp(2.55, 9.21, 1.0, 2.05);   // Bogenleuchte: Fuß rechts neben dem Schreibtisch, Bogen über die Tischmitte
   // Bürostuhl
   const g = grp(1.65, 8.45, 0);
   for (let i = 0; i < 5; i++) {
@@ -1417,7 +1544,7 @@ updateCurtain();
 // --- Raum-Labels -----------------------------------------------------------------
 // Flächen der offenen Bereiche aus den Modellmaßen (Plan-Koordinaten, Innenmaße ohne Balkenlinie X 11.22–11.40)
 const rect = (x0, x1, y0, y1) => (x1 - x0) * (y1 - y0);
-const m2 = a => `${a.toFixed(2).replace('.', ',')} m²`;
+const m2 = a => `${(Math.round(a * 10) / 10).toFixed(1).replace('.', ',')} m²`;   // eine Nachkommastelle
 const AREA = {
   // Spielen: Wand Eltern (7.68) bis Balkenlinie (11.22), Außenwand (0.40) bis Flurwand (4.57), minus Kamin (10.58–11.22 × 4.06–4.57)
   spielen: rect(7.68, 11.22, 0.40, 4.57) - rect(10.58, 11.22, 4.06, 4.57),
@@ -1430,19 +1557,18 @@ const AREA = {
   essen: rect(12.45, 14.94, 6.16, 9.57),
 };
 const rooms = [
-  ['Kinder', '16,33 m²', 1.98, 2.7],
-  ['Eltern', '14,84 m²', 5.73, 2.5],
+  ['Kinder', m2(16.33), 1.98, 2.7],
+  ['Eltern', m2(14.84), 5.73, 2.5],
   ['Spielen', m2(AREA.spielen), 9.1, 2.5],
   ['Wohnen', m2(AREA.wohnen), 13.17, 2.6],
-  ['Flur', '12,18 m²', 5.0, 5.45],   // aus Modellmaßen: Flurwand Nord (4.77) bis Bad/WC/TRH, Ost offen bis Balkenlinie (11.40)
-  ['Gäste/Büro', '11,75 m²', 1.45, 7.3],
-  ['Bad', '7,68 m²', 4.1, 7.9],
-  ['WC', '1,73 m²', 5.9, 8.6],
-  ['Treppenhaus', '7,87 m²', 7.6, 6.75],
+  ['Flur', m2(12.36), 5.0, 5.45],   // aus Modellmaßen: Flurwand Nord (4.77, durchgehend gleich dick) bis Bad/WC/TRH, Ost offen bis Balkenlinie (11.40)
+  ['Gäste/Büro', m2(11.75), 1.45, 7.3],
+  ['Bad', m2(7.68), 4.1, 7.9],
+  ['WC', m2(1.73), 5.9, 8.6],
   ['Küche', m2(AREA.kueche), 10.4, 7.9],
   ['Essen', m2(AREA.essen), 13.4, 7.9],
-  ['Veranda', '2,24 m²', 4.0, 10.33],
-  ['Balkon', '2,12 m²', 11.1, 10.33],
+  ['Veranda', m2(2.24), 4.0, 10.33],
+  ['Balkon', m2(2.12), 11.1, 10.33],
 ];
 const labels = [];
 for (const [name, area, X, Y] of rooms) {
@@ -1783,8 +1909,8 @@ function setMode(m) {
     orbit.enabled = false;
     ceilingBeforeWalk = ceiling.visible;
     setCeiling(true);
-    camera.position.set(wx(4.4), EYE, wz(5.45));
-    camera.lookAt(wx(11), EYE - 0.1, wz(5.45));
+    camera.position.set(wx(7.99), EYE, wz(6.75));          // Start im Treppenhaus, 75 cm vor der Wohnungstür
+    camera.lookAt(wx(8.25), EYE - 0.1, wz(6.05));          // Blick auf die Tür
     overlay.style.display = 'flex';
     enterFullscreen();
   } else if (m === 'top') {
@@ -1805,10 +1931,10 @@ btnCurtain.addEventListener('click', () => {
   curtainTarget = curtainTarget ? 0 : 1;
   btnCurtain.textContent = curtainTarget ? 'Vorhang schließen' : 'Vorhang öffnen';
 });
-const btnFurn = document.getElementById('btnFurn');
-btnFurn.addEventListener('click', () => {
-  furniture.visible = !furniture.visible;
-  btnFurn.textContent = furniture.visible ? 'Möbel ausblenden' : 'Möbel einblenden';
+const chkFurn = document.getElementById('chkFurn');
+chkFurn.checked = furniture.visible;
+chkFurn.addEventListener('change', () => {
+  furniture.visible = chkFurn.checked;
   if (!furniture.visible && mode === 'car') setMode(carReturn);   // ohne Möbel kein Auto
   updateHelp();
 });
@@ -1924,7 +2050,7 @@ renderer.setAnimationLoop(() => {
 });
 
 // Für Tests/Debugging
-window.__app = { scene, camera, orbit, setMode, solids, doors, toggleDoor, furniture, collide, swing, SWING, activate, curtain, toyCar, car, keys, touchCtl, tilt, get mode() { return mode; }, get isTouch() { return isTouch; } };
+window.__app = { scene, camera, renderer, orbit, setMode, solids, doors, toggleDoor, furniture, collide, swing, SWING, activate, curtain, toyCar, car, keys, touchCtl, tilt, get mode() { return mode; }, get isTouch() { return isTouch; } };
 </script>
 </body>
 </html>
